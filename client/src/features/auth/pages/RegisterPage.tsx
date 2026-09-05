@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/authApi';
 
 const roleOptions = ['donor', 'patient', 'hospital', 'bloodBank'] as const;
@@ -22,10 +23,10 @@ const initialState: RegisterForm = {
 };
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState<RegisterForm>(initialState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -36,7 +37,6 @@ export default function RegisterPage() {
     event.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
 
     if (form.password !== form.confirmPassword) {
       setLoading(false);
@@ -45,7 +45,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await registerUser({
+      await registerUser({
         email: form.email,
         password: form.password,
         firstName: form.firstName || undefined,
@@ -53,10 +53,12 @@ export default function RegisterPage() {
         role: form.role,
       });
 
-      setSuccess(response.message || 'Registration successful.');
-      setForm(initialState);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Unable to register user.';
+      // Redirect to login with a state flag so LoginPage can show a success message
+      navigate('/login', { state: { registered: true }, replace: true });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Unable to register user.';
       setError(message);
     } finally {
       setLoading(false);
@@ -70,23 +72,23 @@ export default function RegisterPage() {
         <input name="firstName" value={form.firstName} placeholder="First name" onChange={handleChange} />
         <input name="lastName" value={form.lastName} placeholder="Last name" onChange={handleChange} />
         <input name="email" type="email" value={form.email} placeholder="Email" onChange={handleChange} required />
-        <input name="password" type="password" value={form.password} placeholder="Password" onChange={handleChange} required />
+        <input name="password" type="password" value={form.password} placeholder="Password (min 8 chars)" onChange={handleChange} required />
         <input name="confirmPassword" type="password" value={form.confirmPassword} placeholder="Confirm password" onChange={handleChange} required />
         <select name="role" value={form.role} onChange={handleChange}>
           {roleOptions.map((role) => (
-            <option key={role} value={role}>
-              {role}
-            </option>
+            <option key={role} value={role}>{role}</option>
           ))}
         </select>
 
-        {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
-        {success ? <p style={{ color: 'green' }}>{success}</p> : null}
+        {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
         <button type="submit" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+          {loading ? 'Registering…' : 'Register'}
         </button>
       </form>
+      <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#666' }}>
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
     </div>
   );
 }

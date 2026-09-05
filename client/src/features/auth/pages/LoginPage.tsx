@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getCurrentUser, loginUser } from '../services/authApi';
 
@@ -16,13 +17,20 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // Server sets httpOnly refresh cookie in the response automatically.
+      // We only receive the short-lived access token in the JSON body.
       const response = await loginUser({ email, password });
-      const token = response.data.accessToken;
-      const currentUser = await getCurrentUser(token);
+      const token = response.data.accessToken as string;
 
-      login(currentUser.data, token);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Invalid email or password.';
+      // Fetch full user (interceptor will attach the access token)
+      const meResponse = await getCurrentUser();
+      login(meResponse.data, token);
+
+      // Navigation is handled by App.tsx RootRedirect / ProtectedRoute
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Invalid email or password.';
       setError(message);
     } finally {
       setLoading(false);
@@ -33,15 +41,30 @@ export default function LoginPage() {
     <div style={{ maxWidth: 420, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 12 }}>
       <h2>Login</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
-        <input type="email" value={email} placeholder="Email" onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" value={password} placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
+        <input
+          type="email"
+          value={email}
+          placeholder="Email"
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          value={password}
+          placeholder="Password"
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-        {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
+        {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
         <button type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Logging in…' : 'Login'}
         </button>
       </form>
+      <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#666' }}>
+        Don&apos;t have an account? <Link to="/register">Register</Link>
+      </p>
     </div>
   );
 }

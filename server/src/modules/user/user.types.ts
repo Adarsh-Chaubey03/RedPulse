@@ -20,6 +20,7 @@ export interface IUser {
   firstName?: string;
   lastName?: string;
   profilePhoto?: string;
+  dateOfBirth?: Date;
   bloodGroup?: BloodGroup;
   isProfileComplete: boolean;
   isVerified: boolean;

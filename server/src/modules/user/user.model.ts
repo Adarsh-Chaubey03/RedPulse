@@ -37,6 +37,9 @@ const userSchema = new Schema<IUserDocument>(
     profilePhoto: {
       type: String,
     },
+    dateOfBirth: {
+      type: Date,
+    },
     bloodGroup: {
       type: String,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
@@ -68,6 +71,7 @@ userSchema.set("toJSON", {
   },
 });
 
-const User = mongoose.models.User || mongoose.model<IUserDocument>("User", userSchema);
+const User =
+  mongoose.models.User || mongoose.model<IUserDocument>("User", userSchema);
 
 export default User as UserModelType;
