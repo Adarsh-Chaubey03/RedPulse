@@ -9,8 +9,6 @@ import User from "./user.model";
 
 // ─── Validation schemas ───────────────────────────────────────────────────────
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
-
 const updateProfileSchema = z.object({
   firstName: z.string().trim().min(1, "First name cannot be empty.").optional(),
   lastName: z.string().trim().min(1, "Last name cannot be empty.").optional(),
@@ -21,13 +19,18 @@ const updateProfileSchema = z.object({
       message: "Invalid date of birth.",
     })
     .optional(),
-  bloodGroup: z.enum(BLOOD_GROUPS, {
-    errorMap: () => ({ message: "Invalid blood group." }),
-  }).optional(),
+  bloodGroup: z
+    .string()
+    .refine((v) => ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].includes(v), {
+      message: "Invalid blood group.",
+    })
+    .optional(),
 });
 
 const updateAvailabilitySchema = z.object({
-  isAvailable: z.boolean({ required_error: "isAvailable is required." }),
+  isAvailable: z.boolean().refine((v) => typeof v === "boolean", {
+    message: "isAvailable must be a boolean.",
+  }),
 });
 
 // ─── GET /api/users/me ────────────────────────────────────────────────────────
@@ -97,7 +100,10 @@ export const updateMyProfile = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const updated = await updateUserProfile(userId, parsed.data);
+    const updated = await updateUserProfile(userId, {
+      ...parsed.data,
+      bloodGroup: parsed.data.bloodGroup as import("../user/user.types").BloodGroup | undefined,
+    });
 
     if (!updated) {
       res.status(404).json({

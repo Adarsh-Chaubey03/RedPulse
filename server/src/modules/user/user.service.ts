@@ -3,10 +3,12 @@ import type { IUserDocument, UserRole, BloodGroup } from "./user.types";
 
 // ─── Sanitize ─────────────────────────────────────────────────────────────────
 
-export const sanitizeUser = (user: Partial<IUserDocument> | null) => {
+export const sanitizeUser = (user: Partial<IUserDocument> | null): Record<string, unknown> | null => {
   if (!user) return null;
-  const safeUser = user.toObject ? user.toObject() : { ...user };
-  delete (safeUser as Record<string, unknown>).password;
+  const safeUser: Record<string, unknown> = user.toObject
+    ? (user.toObject() as unknown as Record<string, unknown>)
+    : { ...(user as unknown as Record<string, unknown>) };
+  delete safeUser.password;
   return safeUser;
 };
 
@@ -110,7 +112,7 @@ export const createUser = async (input: {
   firstName?: string;
   lastName?: string;
   role: UserRole;
-}) => {
+}): Promise<Record<string, unknown> | null> => {
   const user = await User.create({ ...input });
   return sanitizeUser(user);
 };
