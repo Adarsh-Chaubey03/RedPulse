@@ -1,6 +1,21 @@
 import mongoose, { Schema } from "mongoose";
 import type { IUserDocument, UserModelType } from "./user.types";
 
+const geoPointSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["Point"],
+      required: true,
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true,
+    },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema<IUserDocument>(
   {
     firebaseUid: {
@@ -44,6 +59,10 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
     },
+    location: {
+      type: geoPointSchema,
+      default: undefined,
+    },
     isProfileComplete: {
       type: Boolean,
       default: false,
@@ -62,6 +81,9 @@ const userSchema = new Schema<IUserDocument>(
     versionKey: false,
   },
 );
+
+// 2dsphere index required for $near / $geoWithin queries on donors
+userSchema.index({ location: "2dsphere" });
 
 userSchema.set("toJSON", {
   transform: (_doc, ret) => {

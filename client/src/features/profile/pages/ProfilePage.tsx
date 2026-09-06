@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../auth/store/authStore';
-import { updateMyProfile, updateMyAvailability } from '../services/profileApi';
+import { updateMyProfile, updateMyAvailability, updateMyLocation } from '../services/profileApi';
+import { useGeolocation } from '../../../hooks/useGeolocation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,6 +49,11 @@ export default function ProfilePage() {
   const [serverError, setServerError] = useState('');
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [locationSuccess, setLocationSuccess] = useState('');
+
+  const geo = useGeolocation();
 
   const {
     register,

@@ -12,6 +12,12 @@ export type BloodGroup =
   | "O+"
   | "O-";
 
+// GeoJSON Point — coordinates are [longitude, latitude] per GeoJSON spec
+export interface GeoPoint {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
 export interface IUser {
   firebaseUid?: string;
   email: string;
@@ -22,6 +28,7 @@ export interface IUser {
   profilePhoto?: string;
   dateOfBirth?: Date;
   bloodGroup?: BloodGroup;
+  location?: GeoPoint;
   isProfileComplete: boolean;
   isVerified: boolean;
   isAvailable: boolean;

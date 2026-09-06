@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type GeoPoint = {
+  type: 'Point';
+  coordinates: [number, number]; // [longitude, latitude]
+};
+
 export type AuthUser = {
   _id: string;
   email: string;
@@ -10,6 +15,7 @@ export type AuthUser = {
   profilePhoto?: string;
   dateOfBirth?: string;
   bloodGroup?: string;
+  location?: GeoPoint;
   role: 'donor' | 'patient' | 'hospital' | 'bloodBank' | 'admin';
   isProfileComplete: boolean;
   isVerified: boolean;

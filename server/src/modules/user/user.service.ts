@@ -1,9 +1,11 @@
 import User from "./user.model";
-import type { IUserDocument, UserRole, BloodGroup } from "./user.types";
+import type { IUserDocument, UserRole, BloodGroup, GeoPoint } from "./user.types";
 
 // ─── Sanitize ─────────────────────────────────────────────────────────────────
 
-export const sanitizeUser = (user: Partial<IUserDocument> | null): Record<string, unknown> | null => {
+export const sanitizeUser = (
+  user: Partial<IUserDocument> | null,
+): Record<string, unknown> | null => {
   if (!user) return null;
   const safeUser: Record<string, unknown> = user.toObject
     ? (user.toObject() as unknown as Record<string, unknown>)
@@ -26,22 +28,17 @@ export const findUserById = async (userId: string) => {
 
 /**
  * Determine whether a user's profile is considered complete.
- * The backend always calculates this — the client never sets it directly.
- *
- * Base requirements (all roles): firstName, lastName, dateOfBirth, bloodGroup.
- * Donor-specific: bloodGroup is already in base requirements, so no extra fields yet.
- * This function is intentionally flexible for future role-specific expansion.
+ * Backend always calculates this — client never sets it directly.
  */
 export const calculateIsProfileComplete = (
   user: Partial<IUserDocument>,
 ): boolean => {
-  const base =
+  return (
     !!user.firstName?.trim() &&
     !!user.lastName?.trim() &&
     !!user.dateOfBirth &&
-    !!user.bloodGroup;
-
-  return base;
+    !!user.bloodGroup
+  );
 };
 
 // ─── Profile update ───────────────────────────────────────────────────────────
@@ -61,7 +58,6 @@ export const updateUserProfile = async (
   const user = await User.findById(userId);
   if (!user) return null;
 
-  // Apply only the fields that were explicitly provided
   if (input.firstName !== undefined) user.firstName = input.firstName.trim();
   if (input.lastName !== undefined) user.lastName = input.lastName.trim();
   if (input.profilePhoto !== undefined) user.profilePhoto = input.profilePhoto;
@@ -69,19 +65,12 @@ export const updateUserProfile = async (
 
   if (input.dateOfBirth !== undefined) {
     const parsed = new Date(input.dateOfBirth);
-    if (isNaN(parsed.getTime())) {
-      throw new Error("Invalid date of birth.");
-    }
-    // Must not be in the future
-    if (parsed > new Date()) {
-      throw new Error("Date of birth cannot be in the future.");
-    }
+    if (isNaN(parsed.getTime())) throw new Error("Invalid date of birth.");
+    if (parsed > new Date()) throw new Error("Date of birth cannot be in the future.");
     user.dateOfBirth = parsed;
   }
 
-  // Recalculate profile completion — never trust a client-provided value
   user.isProfileComplete = calculateIsProfileComplete(user);
-
   await user.save();
   return user;
 };
@@ -100,6 +89,26 @@ export const updateDonorAvailability = async (
   }
 
   user.isAvailable = isAvailable;
+  await user.save();
+  return user;
+};
+
+// ─── Location ─────────────────────────────────────────────────────────────────
+
+export const updateUserLocation = async (
+  userId: string,
+  latitude: number,
+  longitude: number,
+): Promise<IUserDocument | null> => {
+  const user = await User.findById(userId);
+  if (!user) return null;
+
+  const location: GeoPoint = {
+    type: "Point",
+    coordinates: [longitude, latitude], // GeoJSON: [lng, lat]
+  };
+
+  user.location = location;
   await user.save();
   return user;
 };

@@ -31,6 +31,14 @@ export const updateMyProfile = async (
   return response.data;
 };
 
+export const updateMyLocation = async (
+  latitude: number,
+  longitude: number,
+): Promise<ApiResponse<AuthUser>> => {
+  const response = await api.patch('/api/users/me/location', { latitude, longitude });
+  return response.data;
+};
+
 export const updateMyAvailability = async (
   isAvailable: boolean,
 ): Promise<ApiResponse<AuthUser>> => {
