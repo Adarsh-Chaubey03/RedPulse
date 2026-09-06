@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './features/auth/store/authStore';
-import { refreshToken, getCurrentUser, logoutUser } from './features/auth/services/authApi';
+import { refreshToken, getCurrentUser } from './features/auth/services/authApi';
 
 // Home page
 import HomePage from './features/home/pages/HomePage';
@@ -55,12 +55,6 @@ function AuthenticatedRedirect() {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!user?.isProfileComplete) return <Navigate to="/profile/setup" replace />;
   return <Navigate to="/dashboard" replace />;
-}
-
-// ─── Logout helper (kept for any page that needs it) ─────────────────────────
-export async function doLogout() {
-  try { await logoutUser(); } catch { /* ignore */ }
-  useAuthStore.getState().logout();
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────

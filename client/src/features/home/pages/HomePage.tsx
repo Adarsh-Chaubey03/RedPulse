@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../auth/store/authStore';
-import heroImg from '../../../assets/hero.png';
+
+const heroImg = '/hero.png';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const RED = '#c0392b';
@@ -32,13 +33,24 @@ function Pill({ children, color = RED }: { children: React.ReactNode; color?: st
   );
 }
 
-function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
+function SectionNavLink({ href, children, color }: { href: string; children: React.ReactNode; color: string }) {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   return (
-    <Link to={to} style={{ color: '#374151', fontSize: 14, fontWeight: 450, textDecoration: 'none' }}
-      onMouseEnter={e => (e.currentTarget.style.color = RED)}
-      onMouseLeave={e => (e.currentTarget.style.color = '#374151')}>
+    <a
+      href={href}
+      onClick={handleClick}
+      style={{ color, fontSize: 14, fontWeight: 500, textDecoration: 'none', transition: 'opacity 0.15s' }}
+      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+    >
       {children}
-    </Link>
+    </a>
   );
 }
 
@@ -72,9 +84,9 @@ function Navbar() {
 
         {/* Nav links */}
         <nav style={{ display: 'flex', gap: 28, marginLeft: 8 }}>
-          <NavLink to="#how-it-works">How it works</NavLink>
-          <NavLink to="#why-redpulse">Why RedPulse</NavLink>
-          <NavLink to="#blood-groups">Blood groups</NavLink>
+          <SectionNavLink href="#how-it-works" color="#b45309">How it works</SectionNavLink>
+          <SectionNavLink href="#why-redpulse" color="#1e3a5f">Why RedPulse</SectionNavLink>
+          <SectionNavLink href="#blood-groups" color={RED}>Blood groups</SectionNavLink>
         </nav>
 
         {/* Auth actions */}
@@ -144,21 +156,21 @@ function HeroSection() {
 
         <h1 style={{
           marginTop: 20,
-          fontSize: 'clamp(42px, 5vw, 62px)',
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: -2,
+          fontSize: 'clamp(32px, 4vw, 52px)',
+          fontWeight: 700,
+          lineHeight: 1.1,
+          letterSpacing: -1.5,
           color: '#111827',
         }}>
           Find blood donors when every second matters.
         </h1>
 
         <p style={{
-          marginTop: 20,
-          fontSize: 16,
-          lineHeight: 1.65,
+          marginTop: 16,
+          fontSize: 15,
+          lineHeight: 1.6,
           color: '#6b7280',
-          maxWidth: 400,
+          maxWidth: 420,
         }}>
           RedPulse helps patients and hospitals connect with nearby eligible donors{' '}
           <span style={{ color: RED }}>quickly</span>, clearly, and{' '}
@@ -166,15 +178,16 @@ function HeroSection() {
         </p>
 
         {/* CTA buttons */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
           <button
             onClick={handleRequestBlood}
             style={{
-              padding: '12px 24px', borderRadius: 8,
+              padding: '9px 18px', borderRadius: 7,
               background: RED, color: '#fff',
-              border: 'none', fontSize: 14, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 6,
+              border: 'none', fontSize: 13, fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: 5,
               transition: 'background 0.15s',
+              cursor: 'pointer',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = RED_DARK)}
             onMouseLeave={e => (e.currentTarget.style.background = RED)}
@@ -184,11 +197,12 @@ function HeroSection() {
           <button
             onClick={handleBecomeDonor}
             style={{
-              padding: '12px 24px', borderRadius: 8,
+              padding: '9px 18px', borderRadius: 7,
               background: '#fff', color: '#111827',
-              border: `1px solid ${BORDER}`, fontSize: 14, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 6,
+              border: `1px solid ${BORDER}`, fontSize: 13, fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: 5,
               transition: 'border-color 0.15s',
+              cursor: 'pointer',
             }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = '#9ca3af')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
@@ -672,7 +686,14 @@ function Footer() {
             { label: 'About', href: '#why-redpulse' },
             { label: 'Help', href: '#' },
           ].map(link => (
-            <a key={link.label} href={link.href} style={{ fontSize: 13, color: '#6b7280', textDecoration: 'none' }}
+            <a
+              key={link.label}
+              href={link.href}
+              onClick={(e) => {
+                const target = document.querySelector(link.href);
+                if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+              }}
+              style={{ fontSize: 13, color: '#6b7280', textDecoration: 'none' }}
               onMouseEnter={e => (e.currentTarget.style.color = RED)}
               onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}>
               {link.label}
