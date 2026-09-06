@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './features/auth/store/authStore';
 import { refreshToken, getCurrentUser, logoutUser } from './features/auth/services/authApi';
+
+// Home page
+import HomePage from './features/home/pages/HomePage';
 
 // Auth pages
 import LoginPage from './features/auth/pages/LoginPage';
@@ -44,87 +47,57 @@ function AuthInitializer() {
   return null;
 }
 
-// ─── Root redirect ────────────────────────────────────────────────────────────
+// ─── Authenticated root redirect ──────────────────────────────────────────────
+// Only used when an authenticated user navigates to /dashboard shortcut etc.
 
-function RootRedirect() {
+function AuthenticatedRedirect() {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!user?.isProfileComplete) return <Navigate to="/profile/setup" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
+// ─── Logout helper (kept for any page that needs it) ─────────────────────────
+export async function doLogout() {
+  try { await logoutUser(); } catch { /* ignore */ }
+  useAuthStore.getState().logout();
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const { isAuthenticated, user } = useAuthStore();
-
-  const handleLogout = async () => {
-    try { await logoutUser(); } catch { /* ignore */ }
-    useAuthStore.getState().logout();
-  };
-
   return (
     <BrowserRouter>
       <AuthInitializer />
-
-      <nav style={{
-        display: 'flex', gap: '1rem', padding: '0.75rem 2rem',
-        borderBottom: '1px solid #ddd', alignItems: 'center',
-        background: '#fff', position: 'sticky', top: 0, zIndex: 100,
-      }}>
-        {!isAuthenticated ? (
-          <>
-            <span style={{ fontWeight: 700, color: '#c0392b', marginRight: '0.5rem' }}>🩸 RedPulse</span>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
-          </>
-        ) : (
-          <>
-            <span style={{ fontWeight: 700, color: '#c0392b', marginRight: '0.5rem' }}>🩸 RedPulse</span>
-            <Link to="/dashboard">Dashboard</Link>
-            <Link to="/blood-requests">Blood Requests</Link>
-            {user?.role !== 'donor' && (
-              <Link to="/blood-requests/new">+ New Request</Link>
-            )}
-            <Link to="/profile">Profile</Link>
-            <span style={{ marginLeft: 'auto', color: '#666', fontSize: '0.875rem' }}>
-              {user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}
-              {' '}
-              <span style={{
-                fontSize: '0.75rem', padding: '0.1rem 0.5rem', borderRadius: 10,
-                background: '#f0f0f0', color: '#555',
-              }}>
-                {user?.role}
-              </span>
-            </span>
-            <button type="button" onClick={handleLogout}
-              style={{ padding: '0.3rem 0.8rem', border: '1px solid #ccc', borderRadius: 6, cursor: 'pointer', background: '#fff' }}>
-              Logout
-            </button>
-          </>
-        )}
-      </nav>
-
       <Routes>
-        <Route path="/" element={<RootRedirect />} />
+        {/* Public landing page */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
+        {/* Shortcut: /app redirects authenticated users to dashboard */}
+        <Route path="/app" element={<AuthenticatedRedirect />} />
+
+        {/* Protected: Profile setup */}
         <Route path="/profile/setup" element={
           <ProtectedRoute requiresIncompleteProfile>
             <ProfileSetupPage />
           </ProtectedRoute>
         } />
 
+        {/* Protected: Profile */}
         <Route path="/profile" element={
           <ProtectedRoute><ProfilePage /></ProtectedRoute>
         } />
 
+        {/* Protected: Dashboard */}
         <Route path="/dashboard" element={
           <ProtectedRoute><DashboardPage /></ProtectedRoute>
         } />
 
-        {/* Blood request routes */}
+        {/* Protected: Blood request routes */}
         <Route path="/blood-requests" element={
           <ProtectedRoute><BloodRequestsPage /></ProtectedRoute>
         } />
@@ -135,6 +108,7 @@ function App() {
           <ProtectedRoute><BloodRequestDetailsPage /></ProtectedRoute>
         } />
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
