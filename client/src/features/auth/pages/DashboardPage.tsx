@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { listBloodRequests } from '../../blood-request/services/bloodRequestApi';
 import type { BloodRequest, RequestStatus } from '../../blood-request/types';
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const RED    = '#c0392b';
-const BORDER = '#e5e7eb';
+import { StatCard, RED, BORDER } from '../../dashboard/components/ui';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<RequestStatus, string> = {
@@ -45,35 +42,6 @@ const MOCK_UPDATES = [
   { id: 3, title: 'Donation milestone',          desc: 'Thank you for completing your 4th donation.',              time: '3 days ago' },
 ];
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({
-  icon, label, value, sub, iconBg, iconColor,
-}: {
-  icon: string; label: string; value: number | string;
-  sub: string; iconBg: string; iconColor: string;
-}) {
-  return (
-    <div style={{
-      background: '#fff', border: `1px solid ${BORDER}`,
-      borderRadius: 10, padding: '18px 20px',
-      display: 'flex', gap: 16, alignItems: 'flex-start',
-    }}>
-      <span style={{
-        width: 36, height: 36, borderRadius: 8,
-        background: iconBg, color: iconColor,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 16, flexShrink: 0,
-      }}>{icon}</span>
-      <div>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{label}</p>
-        <p style={{ margin: '4px 0 2px', fontSize: 26, fontWeight: 700, color: '#111827', lineHeight: 1 }}>
-          {value}
-        </p>
-        <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>{sub}</p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {

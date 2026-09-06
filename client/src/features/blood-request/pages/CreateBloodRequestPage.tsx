@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useGeolocation } from '../../../hooks/useGeolocation';
 import { createBloodRequest } from '../services/bloodRequestApi';
 import { useAuthStore } from '../../auth/store/authStore';
-import { BLOOD_GROUPS, BLOOD_COMPONENTS, URGENCY_VALUES } from '../types';
+import { BLOOD_GROUPS, BLOOD_COMPONENTS } from '../types';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const RED    = '#c0392b';
@@ -80,7 +80,7 @@ export default function CreateBloodRequestPage() {
   const [serverError, setServerError] = useState('');
   const [geoFilling,  setGeoFilling]  = useState(false);
 
-  const { register, handleSubmit, watch, setValue, trigger, getValues,
+  const { register, handleSubmit, setValue, trigger, getValues,
     formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { urgency: 'critical', unitsRequired: 2, bloodGroup: 'O+', bloodComponent: 'Whole Blood' },
