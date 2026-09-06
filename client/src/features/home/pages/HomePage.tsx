@@ -138,7 +138,7 @@ function HeroSection() {
   };
 
   const handleBecomeDonor = () => {
-    navigate('/register');
+    navigate('/register', { state: { preselectedRole: 'donor' } });
   };
 
   return (
@@ -631,7 +631,7 @@ function CTASection() {
             Request blood →
           </button>
           <button
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/register', { state: { preselectedRole: 'donor' } })}
             style={{
               padding: '13px 28px', borderRadius: 8,
               background: 'transparent', color: '#fff',
