@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { userRoutes } from "./modules/user/user.routes";
+import { bloodRequestRoutes } from "./modules/blood-request/blood-request.routes";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get("/api/health", (_req, res) => {
 const router = express.Router();
 authRoutes(router);
 userRoutes(router);
+bloodRequestRoutes(router);
 app.use(router);
 
 export default app;
