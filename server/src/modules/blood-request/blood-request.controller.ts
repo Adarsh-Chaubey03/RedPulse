@@ -110,7 +110,7 @@ export const getRequest = async (req: Request, res: Response): Promise<void> => 
     if (!auth) return;
 
     const { id } = req.params;
-    const doc = await getBloodRequestById(id);
+    const doc = await getBloodRequestById(String(id));
 
     if (!doc) {
       res.status(404).json({
@@ -150,7 +150,7 @@ export const updateStatus = async (req: Request, res: Response): Promise<void> =
     }
 
     const doc = await updateBloodRequestStatus(
-      req.params.id,
+      String(req.params.id),
       auth.userId,
       parsed.data.status as RequestStatus,
       auth.role,
@@ -178,7 +178,7 @@ export const cancelRequest = async (req: Request, res: Response): Promise<void> 
     const auth = requireUser(req, res);
     if (!auth) return;
 
-    const doc = await cancelBloodRequest(req.params.id, auth.userId, auth.role);
+    const doc = await cancelBloodRequest(String(req.params.id), auth.userId, auth.role);
 
     res.status(200).json({
       success: true,

@@ -4,6 +4,9 @@ import {
   ALLOWED_TRANSITIONS,
   type IBloodRequestDocument,
   type RequestStatus,
+  type BloodGroup,
+  type BloodComponent,
+  type Urgency,
 } from "./blood-request.types";
 import type { CreateBloodRequestInput } from "./blood-request.validation";
 
@@ -17,6 +20,9 @@ export const createBloodRequest = async (
 
   const doc = await BloodRequest.create({
     ...rest,
+    bloodGroup:      rest.bloodGroup      as BloodGroup,
+    bloodComponent:  rest.bloodComponent  as BloodComponent,
+    urgency:         rest.urgency         as Urgency,
     requestedBy: new mongoose.Types.ObjectId(requestedBy),
     hospitalLocation: {
       type: "Point",
