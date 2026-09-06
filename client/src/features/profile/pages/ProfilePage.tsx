@@ -116,6 +116,34 @@ export default function ProfilePage() {
     }
   };
 
+  // Request browser location then save to server
+  const handleUseCurrentLocation = async () => {
+    setLocationError('');
+    setLocationSuccess('');
+    geo.requestLocation();
+  };
+
+  // When geo state becomes 'success', save to server
+  const handleSaveLocation = async () => {
+    if (geo.status !== 'success' || geo.latitude === null || geo.longitude === null) return;
+    setLocationSaving(true);
+    setLocationError('');
+    setLocationSuccess('');
+    try {
+      const response = await updateMyLocation(geo.latitude, geo.longitude);
+      setUser(response.data);
+      setLocationSuccess('Location saved successfully.');
+      geo.reset();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Unable to save location.';
+      setLocationError(message);
+    } finally {
+      setLocationSaving(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -186,6 +214,61 @@ export default function ProfilePage() {
           >
             Edit Profile
           </button>
+
+          {/* ── Location section ──────────────────────────────────────────── */}
+          <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginTop: '0.5rem' }}>
+            <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Location</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.75rem' }}>
+              {user.location
+                ? `✓ Location set (${user.location.coordinates[1].toFixed(4)}°, ${user.location.coordinates[0].toFixed(4)}°)`
+                : 'Not set'}
+            </p>
+
+            {/* Step 1: request browser location */}
+            {geo.status === 'idle' || geo.status === 'permission_denied' || geo.status === 'position_unavailable' || geo.status === 'timeout' || geo.status === 'unsupported' ? (
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                style={{ padding: '0.4rem 1rem', borderRadius: 8, border: '1px solid #c0392b', background: '#fff', color: '#c0392b', cursor: 'pointer', fontWeight: 500 }}
+              >
+                📍 Use current location
+              </button>
+            ) : null}
+
+            {geo.status === 'requesting' && (
+              <p style={{ color: '#888', fontSize: '0.875rem' }}>Requesting location…</p>
+            )}
+
+            {/* Step 2: got coords — show confirm button */}
+            {geo.status === 'success' && geo.latitude !== null && geo.longitude !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.875rem', color: '#555' }}>
+                  {geo.latitude.toFixed(4)}°N, {geo.longitude.toFixed(4)}°E
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveLocation}
+                  disabled={locationSaving}
+                  style={{ padding: '0.4rem 1rem', borderRadius: 8, border: 'none', background: '#27ae60', color: '#fff', cursor: locationSaving ? 'not-allowed' : 'pointer', fontWeight: 500 }}
+                >
+                  {locationSaving ? 'Saving…' : 'Confirm & save'}
+                </button>
+                <button type="button" onClick={geo.reset} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1px solid #ccc', background: '#fff', cursor: 'pointer', color: '#666' }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {geo.errorMessage && (
+              <p style={{ color: 'crimson', fontSize: '0.85rem', marginTop: 6 }}>{geo.errorMessage}</p>
+            )}
+            {locationError && (
+              <p style={{ color: 'crimson', fontSize: '0.85rem', marginTop: 6 }}>{locationError}</p>
+            )}
+            {locationSuccess && (
+              <p style={{ color: 'green', fontSize: '0.85rem', marginTop: 6 }}>{locationSuccess}</p>
+            )}
+          </div>
         </div>
       ) : (
         /* ── Edit mode ─────────────────────────────────────────────────────── */
