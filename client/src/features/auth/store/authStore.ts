@@ -17,6 +17,10 @@ export type AuthUser = {
   bloodGroup?: string;
   location?: GeoPoint;
   role: 'donor' | 'patient' | 'hospital' | 'bloodBank' | 'admin';
+  // Organization fields (hospital / bloodBank)
+  organizationName?: string;
+  phone?: string;
+  address?: string;
   isProfileComplete: boolean;
   isVerified: boolean;
   isAvailable: boolean;

@@ -75,6 +75,19 @@ const userSchema = new Schema<IUserDocument>(
       type: Boolean,
       default: false,
     },
+    // Organization-specific fields (hospital / bloodBank roles)
+    organizationName: {
+      type: String,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

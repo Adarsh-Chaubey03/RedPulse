@@ -9,6 +9,10 @@ export interface UpdateProfilePayload {
   profilePhoto?: string;
   dateOfBirth?: string;
   bloodGroup?: string;
+  // Organization fields
+  organizationName?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface ApiResponse<T> {

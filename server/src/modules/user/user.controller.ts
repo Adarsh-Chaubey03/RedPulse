@@ -25,6 +25,14 @@ const updateProfileSchema = z.object({
     .string()
     .refine((v) => BLOOD_GROUP_VALUES.includes(v), { message: "Invalid blood group." })
     .optional(),
+  // Organization fields (hospital / bloodBank)
+  organizationName: z.string().trim().min(1, "Organization name cannot be empty.").optional(),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[+\d\s\-().]{6,20}$/, "Invalid phone number format.")
+    .optional(),
+  address: z.string().trim().min(1, "Address cannot be empty.").optional(),
 });
 
 const updateAvailabilitySchema = z.object({

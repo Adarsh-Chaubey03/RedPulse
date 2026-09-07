@@ -29,6 +29,10 @@ export interface IUser {
   dateOfBirth?: Date;
   bloodGroup?: BloodGroup;
   location?: GeoPoint;
+  // Organization fields — used by hospital and bloodBank roles
+  organizationName?: string;
+  phone?: string;
+  address?: string;
   isProfileComplete: boolean;
   isVerified: boolean;
   isAvailable: boolean;

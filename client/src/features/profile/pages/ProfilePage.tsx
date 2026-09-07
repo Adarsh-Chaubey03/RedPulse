@@ -25,7 +25,15 @@ const editProfileSchema = z.object({
   bloodGroup: z.enum(BLOOD_GROUPS, { errorMap: () => ({ message: 'Select a valid blood group.' }) }),
 });
 
+// Schema for org roles (hospital / bloodBank)
+const editOrgSchema = z.object({
+  organizationName: z.string().trim().min(1, 'Organization name is required.'),
+  phone:            z.string().trim().min(6,  'Phone number is required.'),
+  address:          z.string().trim().min(1,  'Address is required.'),
+});
+
 type EditProfileForm = z.infer<typeof editProfileSchema>;
+type EditOrgForm     = z.infer<typeof editOrgSchema>;
 
 const labelFor = (role: string) => ({
   donor: 'Donor', patient: 'Patient', hospital: 'Hospital',
@@ -60,10 +68,40 @@ export default function ProfilePage() {
       },
     });
 
+  const isOrgRole = user?.role === 'hospital' || user?.role === 'bloodBank';
+
+  const {
+    register: registerOrg,
+    handleSubmit: handleSubmitOrg,
+    formState: { errors: orgErrors, isSubmitting: orgSubmitting },
+    reset: resetOrg,
+  } = useForm<EditOrgForm>({
+    resolver: zodResolver(editOrgSchema),
+    defaultValues: {
+      organizationName: user?.organizationName ?? '',
+      phone:            user?.phone            ?? '',
+      address:          user?.address          ?? '',
+    },
+  });
+
   if (!user) return null;
 
   // ── Handlers (same logic as original) ─────────────────────────────────────
   const onSave = async (data: EditProfileForm) => {
+    setServerError('');
+    try {
+      const res = await updateMyProfile(data);
+      setUser(res.data);
+      setIsEditing(false);
+    } catch (err: unknown) {
+      setServerError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Unable to update profile.',
+      );
+    }
+  };
+
+  const onSaveOrg = async (data: EditOrgForm) => {
     setServerError('');
     try {
       const res = await updateMyProfile(data);
@@ -83,6 +121,11 @@ export default function ProfilePage() {
       lastName:    user.lastName  ?? '',
       dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
       bloodGroup:  (user.bloodGroup as (typeof BLOOD_GROUPS)[number]) ?? undefined,
+    });
+    resetOrg({
+      organizationName: user.organizationName ?? '',
+      phone:            user.phone            ?? '',
+      address:          user.address          ?? '',
     });
     setServerError('');
     setIsEditing(false);
@@ -182,19 +225,42 @@ export default function ProfilePage() {
 
               {/* Info rows */}
               <div style={{ display: 'grid', gap: 14, marginBottom: 20 }}>
-                {[
-                  ['Email',       user.email],
-                  ['Blood group', user.bloodGroup ?? '—'],
-                  ['Date of birth', formatDate(user.dateOfBirth)],
-                  ['Location', user.location
-                    ? `${user.location.coordinates[1].toFixed(4)}°, ${user.location.coordinates[0].toFixed(4)}°`
-                    : 'Not set'],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', gap: 12, fontSize: 14 }}>
-                    <span style={{ width: 120, color: '#6b7280', flexShrink: 0, fontSize: 13 }}>{k}</span>
-                    <span style={{ color: '#111827', fontWeight: 500 }}>{v}</span>
-                  </div>
-                ))}
+                {isOrgRole ? (
+                  // Organization role: show org-specific fields
+                  <>
+                    {[
+                      ['Organization', user.organizationName ?? '—'],
+                      ['Email',        user.email],
+                      ['Phone',        user.phone    ?? '—'],
+                      ['Address',      user.address  ?? '—'],
+                      ['Location', user.location
+                        ? `${user.location.coordinates[1].toFixed(4)}°, ${user.location.coordinates[0].toFixed(4)}°`
+                        : 'Not set'],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', gap: 12, fontSize: 14 }}>
+                        <span style={{ width: 120, color: '#6b7280', flexShrink: 0, fontSize: 13 }}>{k}</span>
+                        <span style={{ color: '#111827', fontWeight: 500 }}>{v}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  // Personal role: show personal fields
+                  <>
+                    {[
+                      ['Email',       user.email],
+                      ['Blood group', user.bloodGroup ?? '—'],
+                      ['Date of birth', formatDate(user.dateOfBirth)],
+                      ['Location', user.location
+                        ? `${user.location.coordinates[1].toFixed(4)}°, ${user.location.coordinates[0].toFixed(4)}°`
+                        : 'Not set'],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', gap: 12, fontSize: 14 }}>
+                        <span style={{ width: 120, color: '#6b7280', flexShrink: 0, fontSize: 13 }}>{k}</span>
+                        <span style={{ color: '#111827', fontWeight: 500 }}>{v}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
 
               {/* Availability toggle (donor only) */}

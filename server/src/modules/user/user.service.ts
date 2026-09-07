@@ -33,6 +33,18 @@ export const findUserById = async (userId: string) => {
 export const calculateIsProfileComplete = (
   user: Partial<IUserDocument>,
 ): boolean => {
+  const role = user.role;
+  if (role === "hospital" || role === "bloodBank") {
+    return (
+      !!user.organizationName?.trim() &&
+      !!user.phone?.trim() &&
+      !!user.address?.trim()
+    );
+  }
+  if (role === "admin") {
+    return !!user.firstName?.trim() && !!user.lastName?.trim();
+  }
+  // donor / patient
   return (
     !!user.firstName?.trim() &&
     !!user.lastName?.trim() &&
@@ -49,6 +61,10 @@ export interface UpdateProfileInput {
   profilePhoto?: string;
   dateOfBirth?: Date | string;
   bloodGroup?: BloodGroup;
+  // Organization fields (hospital / bloodBank)
+  organizationName?: string;
+  phone?: string;
+  address?: string;
 }
 
 export const updateUserProfile = async (
@@ -62,6 +78,10 @@ export const updateUserProfile = async (
   if (input.lastName !== undefined) user.lastName = input.lastName.trim();
   if (input.profilePhoto !== undefined) user.profilePhoto = input.profilePhoto;
   if (input.bloodGroup !== undefined) user.bloodGroup = input.bloodGroup;
+  // Organization fields
+  if (input.organizationName !== undefined) user.organizationName = input.organizationName.trim();
+  if (input.phone !== undefined) user.phone = input.phone.trim();
+  if (input.address !== undefined) user.address = input.address.trim();
 
   if (input.dateOfBirth !== undefined) {
     const parsed = new Date(input.dateOfBirth);
