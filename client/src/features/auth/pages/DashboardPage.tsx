@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { listBloodRequests } from '../../blood-request/services/bloodRequestApi';
 import type { BloodRequest, RequestStatus } from '../../blood-request/types';
 import { StatCard, RED, BORDER } from '../../dashboard/components/ui';
+import MapPanel, { bloodRequestToMarker } from '../../dashboard/components/MapPanel';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<RequestStatus, string> = {
@@ -34,13 +35,6 @@ const greeting = () => {
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
 };
-
-// Mock notifications for "Latest updates" panel
-const MOCK_UPDATES = [
-  { id: 1, title: 'Emergency O+ request nearby', desc: "St. Mary's Hospital is looking for 2 units within 2.4 km.", time: '8 min ago' },
-  { id: 2, title: 'Profile verified',            desc: 'Your donor profile is now verified and visible to hospitals.', time: 'Yesterday' },
-  { id: 3, title: 'Donation milestone',          desc: 'Thank you for completing your 4th donation.',              time: '3 days ago' },
-];
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -192,7 +186,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Latest updates */}
+        {/* Latest updates — derived from real request data */}
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -205,26 +199,71 @@ export default function DashboardPage() {
               See all
             </button>
           </div>
-          {MOCK_UPDATES.map((n, i) => (
-            <div key={n.id} style={{
-              padding: '14px 20px',
-              borderBottom: i < MOCK_UPDATES.length - 1 ? `1px solid ${BORDER}` : 'none',
-              display: 'flex', gap: 12,
-            }}>
-              <span style={{ fontSize: 16, flexShrink: 0, marginTop: 2 }}>🔔</span>
-              <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>{n.title}</p>
-                <p style={{ margin: '3px 0 4px', fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
-                  {n.desc.split(/(St\. Mary's Hospital|verified|4th donation)/).map((part, pi) =>
-                    ['St. Mary\'s Hospital', 'verified', '4th donation'].includes(part)
-                      ? <span key={pi} style={{ color: RED }}>{part}</span>
-                      : part
-                  )}
-                </p>
-                <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>{n.time}</p>
-              </div>
+
+          {loading && <p style={{ padding: '24px 20px', color: '#9ca3af', fontSize: 13 }}>Loading…</p>}
+
+          {!loading && requests.length === 0 && (
+            <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: '#9ca3af' }}>No activity yet. Create your first blood request.</p>
             </div>
-          ))}
+          )}
+
+          {/* Show recent requests as activity feed */}
+          {!loading && requests.slice(0, 4).map((req, i) => {
+            const isActive = req.status === 'searching' || req.status === 'partiallyFulfilled';
+            const icon = isActive ? '🩸' : req.status === 'fulfilled' ? '✅' : '🔔';
+            const title = isActive
+              ? `${req.bloodGroup} request at ${req.hospitalName}`
+              : `Request ${STATUS_LABEL[req.status].toLowerCase()} — ${req.hospitalName}`;
+            const desc = `${req.unitsRequired} unit${req.unitsRequired !== 1 ? 's' : ''} · ${req.bloodComponent}`;
+            const time = new Date(req.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+            return (
+              <div key={req._id}
+                onClick={() => navigate(`/blood-requests/${req._id}`)}
+                style={{
+                  padding: '14px 20px',
+                  borderBottom: i < Math.min(requests.length, 4) - 1 ? `1px solid ${BORDER}` : 'none',
+                  display: 'flex', gap: 12, cursor: 'pointer',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <span style={{ fontSize: 16, flexShrink: 0, marginTop: 2 }}>{icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {title}
+                  </p>
+                  <p style={{ margin: '3px 0 4px', fontSize: 12, color: '#6b7280' }}>{desc}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>{time}</p>
+                </div>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
+                  alignSelf: 'flex-start', flexShrink: 0,
+                  ...STATUS_STYLE[req.status],
+                }}>
+                  {STATUS_LABEL[req.status]}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Map for active request locations */}
+          {!loading && active.length > 0 && (
+            <div style={{ borderTop: `1px solid ${BORDER}` }}>
+              <MapPanel
+                height={180}
+                center={active[0].hospitalLocation?.coordinates
+                  ? { lat: active[0].hospitalLocation.coordinates[1], lng: active[0].hospitalLocation.coordinates[0] }
+                  : { lat: 20, lng: 0 }}
+                zoom={11}
+                requestMarkers={active
+                  .filter(r => r.hospitalLocation?.coordinates?.length === 2)
+                  .map(bloodRequestToMarker)}
+                onRequestClick={r => navigate(`/blood-requests/${r.id}`)}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
