@@ -30,6 +30,20 @@ export interface GeoPoint {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
+// ─── Donor response subdoc ────────────────────────────────────────────────────
+
+export type DonorResponseStatus = 'pending' | 'accepted' | 'withdrawn';
+
+export interface DonorResponse {
+  _id: string;
+  donorId: string;
+  donorName: string;
+  bloodGroup: BloodGroup;
+  status: DonorResponseStatus;
+  respondedAt: string;
+  note?: string;
+}
+
 // ─── Blood request ────────────────────────────────────────────────────────────
 
 export interface BloodRequest {
@@ -45,12 +59,14 @@ export interface BloodRequest {
   bloodGroup: BloodGroup;
   bloodComponent: BloodComponent;
   unitsRequired: number;
+  unitsFulfilled: number;
   hospitalName: string;
   hospitalLocation: GeoPoint;
   requiredAt: string;
   urgency: Urgency;
   additionalInformation?: string;
   status: RequestStatus;
+  donorResponses: DonorResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -78,4 +94,30 @@ export interface ListMeta {
 export interface ListBloodRequestsResponse {
   requests: BloodRequest[];
   meta: ListMeta;
+}
+
+// ─── Nearby donor ─────────────────────────────────────────────────────────────
+
+export interface NearbyDonor {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  bloodGroup: BloodGroup;
+  isAvailable: boolean;
+  isVerified: boolean;
+  distanceMetres: number;
+  distanceKm: number;
+  location: GeoPoint;
+}
+
+export interface NearbyDonorsResponse {
+  donors: NearbyDonor[];
+  meta: {
+    count: number;
+    bloodGroup: string;
+    radiusKm: number;
+    latitude: number;
+    longitude: number;
+    queryMs: number;
+  };
 }
