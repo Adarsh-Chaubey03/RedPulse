@@ -71,12 +71,12 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { label: 'Settings',       path: '/settings',            icon: 'settings'      },
   ],
   hospital: [
-    { label: 'Dashboard',      path: '/dashboard',           icon: 'dashboard'     },
-    { label: 'Requests',       path: '/blood-requests',      icon: 'requests'      },
-    { label: 'Create request', path: '/blood-requests/new',  icon: 'create'        },
-    { label: 'Notifications',  path: '/notifications',       icon: 'notifications' },
-    { label: 'Profile',        path: '/profile',             icon: 'profile'       },
-    { label: 'Settings',       path: '/settings',            icon: 'settings'      },
+    { label: 'Dashboard',       path: '/dashboard',           icon: 'dashboard'     },
+    { label: 'Requests',        path: '/blood-requests',      icon: 'requests'      },
+    { label: 'Find donors',     path: '/find-donors',         icon: 'profile'       },
+    { label: 'Notifications',   path: '/notifications',       icon: 'notifications' },
+    { label: 'Hospital profile', path: '/profile',            icon: 'profile'       },
+    { label: 'Settings',        path: '/settings',            icon: 'settings'      },
   ],
   donor: [
     { label: 'Dashboard',      path: '/dashboard',           icon: 'dashboard'     },
@@ -85,11 +85,14 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { label: 'Settings',       path: '/settings',            icon: 'settings'      },
   ],
   admin: [
-    { label: 'Dashboard',      path: '/dashboard',           icon: 'dashboard'     },
-    { label: 'Requests',       path: '/blood-requests',      icon: 'requests'      },
-    { label: 'Notifications',  path: '/notifications',       icon: 'notifications' },
-    { label: 'Profile',        path: '/profile',             icon: 'profile'       },
-    { label: 'Settings',       path: '/settings',            icon: 'settings'      },
+    { label: 'Dashboard',     path: '/dashboard',             icon: 'dashboard'     },
+    { label: 'Users',         path: '/admin/users',           icon: 'profile'       },
+    { label: 'Blood requests', path: '/blood-requests',       icon: 'requests'      },
+    { label: 'Verification',  path: '/admin/verification',    icon: 'camps'         },
+    { label: 'Analytics',     path: '/admin/analytics',       icon: 'inventory'     },
+    { label: 'Notifications', path: '/notifications',         icon: 'notifications' },
+    { label: 'Profile',       path: '/profile',               icon: 'profile'       },
+    { label: 'Settings',      path: '/settings',              icon: 'settings'      },
   ],
 };
 
