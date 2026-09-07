@@ -4,6 +4,8 @@ import { BLOOD_GROUPS } from '../../blood-request/types';
 import { getNearbyDonors } from '../../blood-request/services/donorApi';
 import type { NearbyDonor } from '../../blood-request/types';
 import { useGeolocation } from '../../../hooks/useGeolocation';
+import MapPanel, { nearbyDonorToMarker } from '../components/MapPanel';
+import type { DonorMarker } from '../components/MapPanel';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const sel: React.CSSProperties = {
@@ -28,6 +30,8 @@ export default function FindDonorsPage() {
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
   const [searched,   setSearched]   = useState(false);
+  const [view,       setView]       = useState<'list' | 'map'>('list');
+  const [selectedDonor, setSelectedDonor] = useState<DonorMarker | null>(null);
 
   // Auto-fill lat/lng from browser geolocation
   const handleUseLocation = () => {
@@ -160,8 +164,8 @@ export default function FindDonorsPage() {
       {/* Results */}
       {searched && !loading && (
         <SectionCard>
-          {/* Header */}
-          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Header with list/map toggle */}
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111827' }}>
                 {donors.length > 0 ? `${donors.length} compatible donor${donors.length !== 1 ? 's' : ''} found` : 'No donors found'}
@@ -172,6 +176,21 @@ export default function FindDonorsPage() {
                 </p>
               )}
             </div>
+            {/* View toggle */}
+            {donors.length > 0 && (
+              <div style={{ display: 'flex', gap: 0, border: `1px solid ${BORDER}`, borderRadius: 7, overflow: 'hidden' }}>
+                {(['list', 'map'] as const).map(v => (
+                  <button key={v} onClick={() => setView(v)} style={{
+                    padding: '6px 16px', fontSize: 12, fontWeight: 600, border: 'none',
+                    background: view === v ? RED : '#fff',
+                    color: view === v ? '#fff' : '#374151',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                    {v === 'list' ? '☰ List' : '🗺 Map'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {donors.length === 0 ? (
@@ -183,7 +202,7 @@ export default function FindDonorsPage() {
                 Try increasing the search radius or selecting a different blood group.
               </p>
             </div>
-          ) : (
+          ) : view === 'list' ? (
             <>
               {/* Table header */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '10px 20px', background: '#f9fafb', borderBottom: `1px solid ${BORDER}` }}>
@@ -201,27 +220,19 @@ export default function FindDonorsPage() {
                     padding: '14px 20px', alignItems: 'center',
                     borderBottom: i < donors.length - 1 ? `1px solid ${BORDER}` : 'none',
                   }}>
-                    {/* Name */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{
                         width: 32, height: 32, borderRadius: '50%',
                         background: '#fef2f2', color: RED,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 13, fontWeight: 700, flexShrink: 0,
-                      }}>
-                        {initial}
-                      </span>
+                      }}>{initial}</span>
                       <span style={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>{displayName}</span>
                     </div>
-                    {/* Blood group */}
                     <span style={{ fontSize: 14, fontWeight: 700, color: RED }}>{donor.bloodGroup}</span>
-                    {/* Distance */}
                     <span style={{ fontSize: 13, color: '#374151' }}>
-                      {donor.distanceKm < 1
-                        ? `${donor.distanceMetres} m`
-                        : `${donor.distanceKm} km`}
+                      {donor.distanceKm < 1 ? `${donor.distanceMetres} m` : `${donor.distanceKm} km`}
                     </span>
-                    {/* Available */}
                     <span style={{
                       display: 'inline-block', padding: '2px 10px', borderRadius: 20,
                       fontSize: 11, fontWeight: 600, width: 'fit-content',
@@ -230,7 +241,6 @@ export default function FindDonorsPage() {
                     }}>
                       {donor.isAvailable ? '✓ Available' : 'Unavailable'}
                     </span>
-                    {/* Verified */}
                     <span style={{ fontSize: 13, color: donor.isVerified ? '#16a34a' : '#9ca3af' }}>
                       {donor.isVerified ? '✓ Verified' : '—'}
                     </span>
@@ -238,6 +248,34 @@ export default function FindDonorsPage() {
                 );
               })}
             </>
+          ) : (
+            /* ── Map view ── */
+            <div>
+              <MapPanel
+                height={420}
+                center={parseFloat(lat) && parseFloat(lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : undefined}
+                zoom={13}
+                centerPoint={parseFloat(lat) && parseFloat(lng) ? { lat: parseFloat(lat), lng: parseFloat(lng), label: 'Search center' } : undefined}
+                donorMarkers={donors.map(nearbyDonorToMarker)}
+                onDonorClick={setSelectedDonor}
+              />
+              {/* Selected donor detail */}
+              {selectedDonor && (
+                <div style={{ padding: '14px 20px', borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 34, height: 34, borderRadius: '50%', background: '#fef2f2', color: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                    {selectedDonor.bloodGroup[0]}
+                  </span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>{selectedDonor.name ?? 'Anonymous Donor'}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+                      {selectedDonor.bloodGroup} · {selectedDonor.distanceKm < 1 ? `${Math.round(selectedDonor.distanceKm * 1000)}m` : `${selectedDonor.distanceKm}km`} away
+                    </p>
+                  </div>
+                  {selectedDonor.isAvailable && <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a', background: '#f0fdf4', padding: '2px 8px', borderRadius: 10 }}>✓ Available</span>}
+                  {selectedDonor.isVerified && <span style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: 10 }}>✓ Verified</span>}
+                </div>
+              )}
+            </div>
           )}
         </SectionCard>
       )}

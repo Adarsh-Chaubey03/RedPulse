@@ -3,6 +3,7 @@
  * Keep this file pure presentational — no API calls, no routing.
  */
 import { useNavigate } from 'react-router-dom';
+import MapPanel from './MapPanel';
 
 export const RED    = '#c0392b';
 export const BORDER = '#e5e7eb';
@@ -129,44 +130,24 @@ export function CardHeader({
 }
 
 // ─── Donors nearby map panel ──────────────────────────────────────────────────
-export function DonorsNearbyPanel() {
+// Props are optional — renders an empty map if no data provided.
+export function DonorsNearbyPanel({
+  donors,
+  centerPoint,
+}: {
+  donors?: import('./MapPanel').DonorMarker[];
+  centerPoint?: { lat: number; lng: number };
+} = {}) {
   return (
     <SectionCard>
-      <CardHeader title="Donors nearby" subtitle="12 compatible donors in range" />
-      {/* Map placeholder with street grid */}
-      <div style={{
-        height: 220,
-        background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #e0f2fe 100%)',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        {[30, 60, 90, 120, 150, 180, 210].map(y => (
-          <div key={y} style={{ position: 'absolute', left: 0, right: 0, top: y, height: 1, background: 'rgba(148,163,184,0.4)' }} />
-        ))}
-        {[40, 80, 120, 160, 200, 240, 280].map(x => (
-          <div key={x} style={{ position: 'absolute', top: 0, bottom: 0, left: x, width: 1, background: 'rgba(148,163,184,0.4)' }} />
-        ))}
-        {[
-          { top: 40,  left: 60,  blue: false },
-          { top: 80,  left: 160, blue: false },
-          { top: 110, left: 100, blue: true  },
-          { top: 140, left: 220, blue: false },
-          { top: 60,  left: 240, blue: false },
-          { top: 170, left: 80,  blue: false },
-        ].map((p, i) => (
-          <div key={i} style={{
-            position: 'absolute', top: p.top, left: p.left,
-            width: 14, height: 14, borderRadius: '50% 50% 50% 0',
-            background: p.blue ? '#2563eb' : RED,
-            transform: 'rotate(-45deg)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-          }} />
-        ))}
-        {/* Location pin icon top-right */}
-        <div style={{
-          position: 'absolute', top: 10, right: 12,
-          fontSize: 16,
-        }}>📍</div>
-      </div>
+      <CardHeader title="Donors nearby" subtitle={donors ? `${donors.length} compatible donors in range` : '12 compatible donors in range'} />
+      <MapPanel
+        height={220}
+        center={centerPoint ?? { lat: 20, lng: 0 }}
+        zoom={centerPoint ? 12 : 2}
+        donorMarkers={donors ?? []}
+        centerPoint={centerPoint}
+      />
     </SectionCard>
   );
 }

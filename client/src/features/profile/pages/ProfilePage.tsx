@@ -6,6 +6,7 @@ import { useGeolocation } from '../../../hooks/useGeolocation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import MapPanel from '../../dashboard/components/MapPanel';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const RED    = '#c0392b';
@@ -340,35 +341,20 @@ export default function ProfilePage() {
           </div>
 
           {/* Map placeholder */}
-          <div style={{
-            height: 200, background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #e0f2fe 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            {/* Street grid lines */}
-            {[30, 60, 90, 120, 150, 180].map(y => (
-              <div key={y} style={{ position: 'absolute', left: 0, right: 0, top: y, height: 1, background: 'rgba(148,163,184,0.4)' }} />
-            ))}
-            {[40, 80, 120, 160, 200, 240, 280].map(x => (
-              <div key={x} style={{ position: 'absolute', top: 0, bottom: 0, left: x, width: 1, background: 'rgba(148,163,184,0.4)' }} />
-            ))}
-            {/* Donor pins */}
-            {[
-              { top: 40,  left: 60  },
-              { top: 80,  left: 160 },
-              { top: 110, left: 100 },
-              { top: 140, left: 220 },
-              { top: 60,  left: 240 },
-            ].map((pos, i) => (
-              <div key={i} style={{
-                position: 'absolute', top: pos.top, left: pos.left,
-                width: 14, height: 14, borderRadius: '50% 50% 50% 0',
-                background: i === 2 ? '#2563eb' : RED,
-                transform: 'rotate(-45deg)',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-              }} />
-            ))}
-          </div>
+          <MapPanel
+            height={200}
+            center={user.location
+              ? { lat: user.location.coordinates[1], lng: user.location.coordinates[0] }
+              : { lat: 20, lng: 0 }}
+            zoom={user.location ? 13 : 2}
+            centerPoint={user.location
+              ? {
+                  lat: user.location.coordinates[1],
+                  lng: user.location.coordinates[0],
+                  label: 'Your location',
+                }
+              : undefined}
+          />
 
           {/* "Return to dashboard" shortcut */}
           <div style={{ padding: '14px 20px' }}>
