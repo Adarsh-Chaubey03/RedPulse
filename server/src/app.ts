@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { userRoutes } from "./modules/user/user.routes";
 import { bloodRequestRoutes } from "./modules/blood-request/blood-request.routes";
+import { donorRoutes } from "./modules/donor/donor.routes";
 
 const app = express();
 
@@ -43,6 +44,7 @@ const router = express.Router();
 authRoutes(router);
 userRoutes(router);
 bloodRequestRoutes(router);
+donorRoutes(router);
 app.use(router);
 
 export default app;
