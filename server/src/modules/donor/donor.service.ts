@@ -6,6 +6,8 @@
  * the database, not in JavaScript.
  */
 
+import mongoose from "mongoose";
+import type { PipelineStage } from "mongoose";
 import User from "../user/user.model";
 import { getCompatibleDonorGroups } from "../../shared/blood-compatibility";
 import type { BloodGroup } from "../user/user.types";
@@ -51,26 +53,16 @@ export const findNearbyDonors = async (
   const compatibleGroups = getCompatibleDonorGroups(bloodGroup as BloodGroup);
   const radiusMetres = radiusKm * 1000;
 
-  /**
-   * $geoNear must be the first stage in an aggregation pipeline.
-   * It automatically uses the 2dsphere index on `location`.
-   *
-   * distanceField: the aggregation adds a `distanceMetres` field to each doc.
-   * query: pre-filter eligible donors before distance sorting (uses index).
-   * maxDistance: in metres — MongoDB handles the radius cut-off.
-   * spherical: true for GeoJSON Point coordinates.
-   */
-  const pipeline = [
+  const pipeline: PipelineStage[] = [
     {
       $geoNear: {
         near: {
-          type: "Point",
-          coordinates: [longitude, latitude], // GeoJSON: [lng, lat]
+          type: "Point" as const,
+          coordinates: [longitude, latitude] as [number, number],
         },
         distanceField: "distanceMetres",
         maxDistance: radiusMetres,
         spherical: true,
-        // Pre-filter: only eligible donors enter the pipeline
         query: {
           role: "donor",
           isAvailable: true,
@@ -78,10 +70,8 @@ export const findNearbyDonors = async (
           location: { $exists: true, $ne: null },
         },
       },
-    },
-    // Hard limit — prevent huge result sets
+    } as PipelineStage,
     { $limit: limit },
-    // Project only the fields callers need — never expose password/tokens
     {
       $project: {
         _id: 1,

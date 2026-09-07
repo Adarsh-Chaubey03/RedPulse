@@ -21,32 +21,48 @@ export type RequestStatus =
   | "expired"
   | "cancelled";
 
+export type DonorResponseStatus = "pending" | "accepted" | "withdrawn";
+
 // ─── Valid status transitions (state machine) ─────────────────────────────────
-// Key = current status → Value = allowed next statuses
 export const ALLOWED_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   searching:          ["partiallyFulfilled", "fulfilled", "expired", "cancelled"],
   partiallyFulfilled: ["fulfilled", "expired", "cancelled"],
-  fulfilled:          [],   // terminal
-  expired:            [],   // terminal
-  cancelled:          [],   // terminal
+  fulfilled:          [],
+  expired:            [],
+  cancelled:          [],
 };
 
-// ─── Document interface ───────────────────────────────────────────────────────
+// ─── Embedded donor response ──────────────────────────────────────────────────
+
+export interface IDonorResponse {
+  donorId:      Types.ObjectId;
+  donorName:    string;
+  bloodGroup:   BloodGroup;
+  status:       DonorResponseStatus;
+  respondedAt:  Date;
+  note?:        string;
+}
+
+export type IDonorResponseDocument = IDonorResponse & { _id: Types.ObjectId };
+
+// ─── BloodRequest document ────────────────────────────────────────────────────
 
 export interface IBloodRequest {
-  requestedBy: Types.ObjectId;
-  patientName: string;
-  bloodGroup: BloodGroup;
-  bloodComponent: BloodComponent;
-  unitsRequired: number;
-  hospitalName: string;
-  hospitalLocation: GeoPoint;
-  requiredAt: Date;
-  urgency: Urgency;
+  requestedBy:           Types.ObjectId;
+  patientName:           string;
+  bloodGroup:            BloodGroup;
+  bloodComponent:        BloodComponent;
+  unitsRequired:         number;
+  unitsFulfilled:        number;
+  hospitalName:          string;
+  hospitalLocation:      GeoPoint;
+  requiredAt:            Date;
+  urgency:               Urgency;
   additionalInformation?: string;
-  status: RequestStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  status:                RequestStatus;
+  donorResponses:        IDonorResponseDocument[];
+  createdAt:             Date;
+  updatedAt:             Date;
 }
 
 export type IBloodRequestDocument = Document<unknown, object, IBloodRequest> &
