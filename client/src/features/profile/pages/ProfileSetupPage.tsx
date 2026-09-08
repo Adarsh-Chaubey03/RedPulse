@@ -140,8 +140,7 @@ export default function ProfileSetupPage() {
   const orgAddress  = watchOrg('address');
   const orgStep     = !orgName || !orgPhone ? 1 : !orgAddress ? 2 : 3;
 
-  // Use the right stepper value
-  const activeStep = isOrgRole ? orgStep : currentStep;
+  // Use the right stepper value — referenced in the stepper JSX below via isOrgRole ? orgStep : currentStep
 
   // ── Submit handlers ───────────────────────────────────────────────────────
   const onSubmit = async (data: ProfileSetupForm) => {
@@ -242,152 +241,155 @@ export default function ProfileSetupPage() {
             <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>{roleDesc}</p>
           </div>
 
-          {/* Stepper */}
+          {/* Stepper — adapts to role */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
-            {STEPS.map((s, i) => (
-              <div key={s.num} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div style={{
-                    width: 26, height: 26, borderRadius: '50%',
-                    background: currentStep === s.num ? RED : currentStep > s.num ? '#16a34a' : BORDER,
-                    color: currentStep >= s.num ? '#fff' : '#9ca3af',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 700, flexShrink: 0,
-                    transition: 'background 0.2s',
-                  }}>
-                    {currentStep > s.num ? '✓' : s.num}
+            {(isOrgRole ? ORG_STEPS : STEPS).map((s, i) => {
+              const steps = isOrgRole ? ORG_STEPS : STEPS;
+              const step  = isOrgRole ? orgStep : currentStep;
+              return (
+                <div key={s.num} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div style={{
+                      width: 26, height: 26, borderRadius: '50%',
+                      background: step === s.num ? RED : step > s.num ? '#16a34a' : BORDER,
+                      color: step >= s.num ? '#fff' : '#9ca3af',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700, flexShrink: 0, transition: 'background 0.2s',
+                    }}>
+                      {step > s.num ? '✓' : s.num}
+                    </div>
+                    <span style={{ fontSize: 11, whiteSpace: 'nowrap', color: step === s.num ? RED : '#9ca3af', fontWeight: step === s.num ? 600 : 400 }}>
+                      {s.label}
+                    </span>
                   </div>
-                  <span style={{
-                    fontSize: 11, whiteSpace: 'nowrap',
-                    color: currentStep === s.num ? RED : '#9ca3af',
-                    fontWeight: currentStep === s.num ? 600 : 400,
-                  }}>
-                    {s.label}
-                  </span>
+                  {i < steps.length - 1 && (
+                    <div style={{ flex: 1, height: 1.5, margin: '0 8px', marginBottom: 16, background: step > s.num ? '#16a34a' : BORDER, transition: 'background 0.2s' }} />
+                  )}
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div style={{
-                    flex: 1, height: 1.5, margin: '0 8px', marginBottom: 16,
-                    background: currentStep > s.num ? '#16a34a' : BORDER,
-                    transition: 'background 0.2s',
-                  }} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Form card */}
-          <div style={{
-            background: '#fff', border: `1px solid ${BORDER}`,
-            borderRadius: 10, padding: '28px',
-          }}>
-            <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '28px' }}>
 
-              {/* Name row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* ── Org form (hospital / bloodBank) ── */}
+            {isOrgRole ? (
+              <form onSubmit={handleSubmitOrg(onSubmitOrg)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label htmlFor="firstName" style={labelStyle}>First name</label>
-                  <input
-                    id="firstName"
-                    {...register('firstName')}
-                    placeholder="Maya"
+                  <label style={labelStyle}>Organization name</label>
+                  <input {...registerOrg('organizationName')}
+                    placeholder={role === 'hospital' ? "e.g. St. Mary's Hospital" : "e.g. Northstar Blood Bank"}
                     style={inputBase}
                     onFocus={e => (e.currentTarget.style.borderColor = RED)}
                     onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
                   />
-                  {errors.firstName && <p style={errStyle}>{errors.firstName.message}</p>}
+                  {orgErrors.organizationName && <p style={errStyle}>{orgErrors.organizationName.message}</p>}
                 </div>
+
                 <div>
-                  <label htmlFor="lastName" style={labelStyle}>Last name</label>
-                  <input
-                    id="lastName"
-                    {...register('lastName')}
-                    placeholder="Thompson"
-                    style={inputBase}
+                  <label style={labelStyle}>Phone number</label>
+                  <input {...registerOrg('phone')} placeholder="+1 (555) 000-0000" style={inputBase}
                     onFocus={e => (e.currentTarget.style.borderColor = RED)}
                     onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
                   />
-                  {errors.lastName && <p style={errStyle}>{errors.lastName.message}</p>}
+                  {orgErrors.phone && <p style={errStyle}>{orgErrors.phone.message}</p>}
                 </div>
-              </div>
 
-              {/* Date of birth */}
-              <div>
-                <label htmlFor="dateOfBirth" style={labelStyle}>Date of birth</label>
-                <input
-                  id="dateOfBirth"
-                  type="date"
-                  {...register('dateOfBirth')}
-                  max={new Date().toISOString().split('T')[0]}
-                  style={inputBase}
-                  onFocus={e => (e.currentTarget.style.borderColor = RED)}
-                  onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
-                />
-                {errors.dateOfBirth && <p style={errStyle}>{errors.dateOfBirth.message}</p>}
-              </div>
-
-              {/* Blood group */}
-              <div>
-                <label htmlFor="bloodGroup" style={labelStyle}>Blood group</label>
-                <select
-                  id="bloodGroup"
-                  {...register('bloodGroup')}
-                  style={{
-                    ...inputBase,
-                    appearance: 'none' as const,
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 13px center',
-                    paddingRight: 38,
-                    cursor: 'pointer',
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = RED)}
-                  onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
-                >
-                  <option value="">Select blood group…</option>
-                  {BLOOD_GROUPS.map(bg => (
-                    <option key={bg} value={bg}>{bg}</option>
-                  ))}
-                </select>
-                {errors.bloodGroup && <p style={errStyle}>{errors.bloodGroup.message}</p>}
-              </div>
-
-              {/* Donor-specific availability notice */}
-              {role === 'donor' && (
-                <div style={{
-                  padding: '12px 14px', borderRadius: 8,
-                  background: '#f0fdf4', border: '1px solid #bbf7d0',
-                  fontSize: 13, color: '#15803d', lineHeight: 1.5,
-                }}>
-                  ✓ As a donor you can toggle your availability from your dashboard at any time.
+                <div>
+                  <label style={labelStyle}>Address</label>
+                  <textarea {...registerOrg('address')} rows={2}
+                    placeholder="123 Medical Center Drive, City, State"
+                    style={{ ...inputBase, resize: 'vertical' as const, fontFamily: 'inherit' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                    onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+                  />
+                  {orgErrors.address && <p style={errStyle}>{orgErrors.address.message}</p>}
                 </div>
-              )}
 
-              {/* Server error */}
-              {serverError && (
-                <p style={{ ...errStyle, background: '#fef2f2', padding: '10px 14px', borderRadius: 7, margin: 0 }}>
-                  {serverError}
-                </p>
-              )}
+                {serverError && <p style={{ ...errStyle, background: '#fef2f2', padding: '10px 14px', borderRadius: 7, margin: 0 }}>{serverError}</p>}
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
+                <button type="submit" disabled={orgSubmitting} style={{
                   width: '100%', padding: '11px', borderRadius: 7,
-                  background: isSubmitting ? '#d9534f' : RED,
-                  color: '#fff', border: 'none',
-                  fontSize: 14, fontWeight: 600,
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  background: orgSubmitting ? '#d9534f' : RED, color: '#fff', border: 'none',
+                  fontSize: 14, fontWeight: 600, cursor: orgSubmitting ? 'not-allowed' : 'pointer',
                   transition: 'background 0.15s', marginTop: 4,
                 }}
-                onMouseEnter={e => { if (!isSubmitting) e.currentTarget.style.background = RED_DK; }}
-                onMouseLeave={e => { if (!isSubmitting) e.currentTarget.style.background = RED; }}
-              >
-                {isSubmitting ? 'Saving…' : 'Save & continue →'}
-              </button>
-            </form>
+                  onMouseEnter={e => { if (!orgSubmitting) e.currentTarget.style.background = RED_DK; }}
+                  onMouseLeave={e => { if (!orgSubmitting) e.currentTarget.style.background = RED; }}
+                >
+                  {orgSubmitting ? 'Saving…' : 'Save & continue →'}
+                </button>
+              </form>
+
+            ) : (
+              /* ── Personal form (donor / patient / admin) ── */
+              <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label htmlFor="firstName" style={labelStyle}>First name</label>
+                    <input id="firstName" {...register('firstName')} placeholder="Maya" style={inputBase}
+                      onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                      onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+                    />
+                    {errors.firstName && <p style={errStyle}>{errors.firstName.message}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" style={labelStyle}>Last name</label>
+                    <input id="lastName" {...register('lastName')} placeholder="Thompson" style={inputBase}
+                      onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                      onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+                    />
+                    {errors.lastName && <p style={errStyle}>{errors.lastName.message}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="dateOfBirth" style={labelStyle}>Date of birth</label>
+                  <input id="dateOfBirth" type="date" {...register('dateOfBirth')} max={new Date().toISOString().split('T')[0]} style={inputBase}
+                    onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                    onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+                  />
+                  {errors.dateOfBirth && <p style={errStyle}>{errors.dateOfBirth.message}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="bloodGroup" style={labelStyle}>Blood group</label>
+                  <select id="bloodGroup" {...register('bloodGroup')} style={{
+                    ...inputBase, appearance: 'none' as const, cursor: 'pointer',
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 13px center', paddingRight: 38,
+                  }}
+                    onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                    onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+                  >
+                    <option value="">Select blood group…</option>
+                    {BLOOD_GROUPS.map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                  </select>
+                  {errors.bloodGroup && <p style={errStyle}>{errors.bloodGroup.message}</p>}
+                </div>
+
+                {role === 'donor' && (
+                  <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: 13, color: '#15803d', lineHeight: 1.5 }}>
+                    ✓ As a donor you can toggle your availability from your dashboard at any time.
+                  </div>
+                )}
+
+                {serverError && <p style={{ ...errStyle, background: '#fef2f2', padding: '10px 14px', borderRadius: 7, margin: 0 }}>{serverError}</p>}
+
+                <button type="submit" disabled={isSubmitting} style={{
+                  width: '100%', padding: '11px', borderRadius: 7,
+                  background: isSubmitting ? '#d9534f' : RED, color: '#fff', border: 'none',
+                  fontSize: 14, fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s', marginTop: 4,
+                }}
+                  onMouseEnter={e => { if (!isSubmitting) e.currentTarget.style.background = RED_DK; }}
+                  onMouseLeave={e => { if (!isSubmitting) e.currentTarget.style.background = RED; }}
+                >
+                  {isSubmitting ? 'Saving…' : 'Save & continue →'}
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Footer note */}
