@@ -28,7 +28,14 @@ const profileSetupSchema = z.object({
   }),
 });
 
+const orgSetupSchema = z.object({
+  organizationName: z.string().trim().min(1, 'Organization name is required.'),
+  phone:            z.string().trim().min(6, 'Phone number is required.'),
+  address:          z.string().trim().min(1, 'Address is required.'),
+});
+
 type ProfileSetupForm = z.infer<typeof profileSetupSchema>;
+type OrgSetupForm     = z.infer<typeof orgSetupSchema>;
 
 // ─── Role label helper ────────────────────────────────────────────────────────
 const ROLE_LABEL: Record<string, string> = {
@@ -83,6 +90,9 @@ export default function ProfileSetupPage() {
   const roleLabel = ROLE_LABEL[role] ?? role;
   const roleDesc  = ROLE_DESC[role] ?? 'Complete your profile to get started.';
 
+  const isOrgRole = role === 'hospital' || role === 'bloodBank';
+
+  // ── Personal form (donor / patient / admin) ───────────────────────────────
   const {
     register,
     handleSubmit,
@@ -100,7 +110,22 @@ export default function ProfileSetupPage() {
     },
   });
 
-  // Determine current visual step for the stepper
+  // ── Org form (hospital / bloodBank) ──────────────────────────────────────
+  const {
+    register: registerOrg,
+    handleSubmit: handleSubmitOrg,
+    watch: watchOrg,
+    formState: { errors: orgErrors, isSubmitting: orgSubmitting },
+  } = useForm<OrgSetupForm>({
+    resolver: zodResolver(orgSetupSchema),
+    defaultValues: {
+      organizationName: user?.organizationName ?? '',
+      phone:            user?.phone            ?? '',
+      address:          user?.address          ?? '',
+    },
+  });
+
+  // Personal stepper progress
   const firstName   = watch('firstName');
   const lastName    = watch('lastName');
   const dob         = watch('dateOfBirth');
@@ -109,6 +134,16 @@ export default function ProfileSetupPage() {
   const step2Done   = !!bloodGroup;
   const currentStep = !step1Done ? 1 : !step2Done ? 2 : 3;
 
+  // Org stepper progress (org roles: step1=name+phone, step2=address)
+  const orgName     = watchOrg('organizationName');
+  const orgPhone    = watchOrg('phone');
+  const orgAddress  = watchOrg('address');
+  const orgStep     = !orgName || !orgPhone ? 1 : !orgAddress ? 2 : 3;
+
+  // Use the right stepper value
+  const activeStep = isOrgRole ? orgStep : currentStep;
+
+  // ── Submit handlers ───────────────────────────────────────────────────────
   const onSubmit = async (data: ProfileSetupForm) => {
     setServerError('');
     try {
@@ -122,6 +157,27 @@ export default function ProfileSetupPage() {
       setServerError(message);
     }
   };
+
+  const onSubmitOrg = async (data: OrgSetupForm) => {
+    setServerError('');
+    try {
+      const response = await updateMyProfile(data);
+      setUser(response.data);
+      navigate('/dashboard', { replace: true });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Unable to save profile. Please try again.';
+      setServerError(message);
+    }
+  };
+
+  // Org step labels
+  const ORG_STEPS = [
+    { num: 1, label: 'Org info'  },
+    { num: 2, label: 'Address'   },
+    { num: 3, label: 'Done'      },
+  ];
 
   return (
     <div style={{

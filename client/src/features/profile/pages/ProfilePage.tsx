@@ -328,8 +328,60 @@ export default function ProfilePage() {
                 Edit profile
               </button>
             </>
+          ) : isOrgRole ? (
+            /* ── Org edit form (hospital / bloodBank) ───────────────────── */
+            <form onSubmit={handleSubmitOrg(onSaveOrg)} style={{ display: 'grid', gap: 14 }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>Edit organization profile</h3>
+
+              <div>
+                <label style={lbl}>Organization name</label>
+                <input {...registerOrg('organizationName')} placeholder="e.g. St. Mary's Hospital" style={inp}
+                  onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                  onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+                {orgErrors.organizationName && <p style={err}>{orgErrors.organizationName.message}</p>}
+              </div>
+
+              <div>
+                <label style={lbl}>Phone number</label>
+                <input {...registerOrg('phone')} placeholder="+1 (555) 000-0000" style={inp}
+                  onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                  onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+                {orgErrors.phone && <p style={err}>{orgErrors.phone.message}</p>}
+              </div>
+
+              <div>
+                <label style={lbl}>Address</label>
+                <textarea {...registerOrg('address')} rows={2} placeholder="123 Medical Center Drive, City, State"
+                  style={{ ...inp, resize: 'vertical', fontFamily: 'inherit' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = RED)}
+                  onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+                {orgErrors.address && <p style={err}>{orgErrors.address.message}</p>}
+              </div>
+
+              {serverError && <p style={err}>{serverError}</p>}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button type="submit" disabled={orgSubmitting} style={{
+                  flex: 1, padding: '10px', borderRadius: 7,
+                  background: orgSubmitting ? '#d9534f' : RED, color: '#fff',
+                  border: 'none', fontSize: 13, fontWeight: 600,
+                  cursor: orgSubmitting ? 'not-allowed' : 'pointer',
+                }}
+                  onMouseEnter={e => { if (!orgSubmitting) e.currentTarget.style.background = RED_DK; }}
+                  onMouseLeave={e => { if (!orgSubmitting) e.currentTarget.style.background = RED; }}
+                >
+                  {orgSubmitting ? 'Saving…' : 'Save changes'}
+                </button>
+                <button type="button" onClick={handleCancel} style={{
+                  flex: 1, padding: '10px', borderRadius: 7,
+                  background: '#f3f4f6', border: 'none', fontSize: 13, cursor: 'pointer',
+                }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
           ) : (
-            /* ── Edit form (same fields as original) ────────────────────── */
+            /* ── Personal edit form (donor / patient / admin) ───────────── */
             <form onSubmit={handleSubmit(onSave)} style={{ display: 'grid', gap: 14 }}>
               <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>Edit profile</h3>
 
