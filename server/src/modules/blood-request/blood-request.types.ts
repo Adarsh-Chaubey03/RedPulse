@@ -57,6 +57,8 @@ export interface IBloodRequest {
   hospitalName:          string;
   hospitalLocation:      GeoPoint;
   requiredAt:            Date;
+  /** When the request automatically expires (backend-enforced). */
+  expiresAt:             Date;
   urgency:               Urgency;
   additionalInformation?: string;
   status:                RequestStatus;

@@ -75,6 +75,17 @@ export const createBloodRequestSchema = z.object({
     .refine((v) => !isNaN(new Date(v).getTime()), { message: "Invalid required date/time." })
     .refine((v) => new Date(v) > new Date(), { message: "Required date/time must be in the future." }),
 
+  /**
+   * Optional explicit expiration datetime (ISO string).
+   * If omitted, the service applies urgency-based defaults:
+   *   critical → 12 h, urgent → 24 h, normal → 48 h
+   */
+  expiresAt: z
+    .string()
+    .refine((v) => !isNaN(new Date(v).getTime()), { message: "Invalid expiration date/time." })
+    .refine((v) => new Date(v) > new Date(), { message: "Expiration must be in the future." })
+    .optional(),
+
   urgency: z
     .string()
     .refine((v) => URGENCY_VALUES.includes(v as typeof URGENCY_VALUES[number]), {

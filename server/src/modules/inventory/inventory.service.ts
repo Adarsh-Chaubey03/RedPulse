@@ -112,5 +112,5 @@ export const bulkUpsertInventory = async (
     ),
   );
 
-  return results.filter((r): r is IInventoryEntryDocument => r !== null);
+  return results.filter((r): r is NonNullable<typeof r> => r !== null) as IInventoryEntryDocument[];
 };

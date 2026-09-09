@@ -63,6 +63,8 @@ export interface BloodRequest {
   hospitalName: string;
   hospitalLocation: GeoPoint;
   requiredAt: string;
+  /** ISO datetime — backend-enforced hard expiration */
+  expiresAt: string;
   urgency: Urgency;
   additionalInformation?: string;
   status: RequestStatus;
@@ -81,6 +83,8 @@ export interface CreateBloodRequestPayload {
   hospitalName: string;
   hospitalLocation: { latitude: number; longitude: number };
   requiredAt: string;
+  /** Optional explicit expiry ISO string. If omitted, backend applies urgency-based TTL. */
+  expiresAt?: string;
   urgency: string;
   additionalInformation?: string;
 }

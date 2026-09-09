@@ -12,11 +12,31 @@ import type { CreateBloodRequestInput } from "./blood-request.validation";
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
+/**
+ * Urgency → default TTL in hours.
+ * Used when expiresAt is not explicitly provided by the client.
+ */
+const EXPIRY_HOURS: Record<string, number> = {
+  critical: 12,
+  urgent:   24,
+  normal:   48,
+};
+
 export const createBloodRequest = async (
   requestedBy: string,
   input: CreateBloodRequestInput,
 ): Promise<IBloodRequestDocument> => {
   const { hospitalLocation, ...rest } = input;
+
+  // Compute expiration time
+  const now = new Date();
+  let expiresAt: Date;
+  if (input.expiresAt) {
+    expiresAt = new Date(input.expiresAt);
+  } else {
+    const hoursToAdd = EXPIRY_HOURS[input.urgency ?? "normal"] ?? 48;
+    expiresAt = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
+  }
 
   const doc = await BloodRequest.create({
     ...rest,
@@ -29,6 +49,7 @@ export const createBloodRequest = async (
       coordinates: [hospitalLocation.longitude, hospitalLocation.latitude],
     },
     requiredAt: new Date(input.requiredAt),
+    expiresAt,
   });
 
   return doc;
@@ -62,7 +83,8 @@ export const listBloodRequests = async (opts: ListBloodRequestsOptions) => {
 
   const [requests, total] = await Promise.all([
     BloodRequest.find(filter)
-      .sort({ createdAt: -1 })
+      // Sort: critical first, then by urgency level, then newest first
+      .sort({ urgency: 1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("requestedBy", "firstName lastName email role")
@@ -79,10 +101,26 @@ export const getBloodRequestById = async (
   id: string,
 ): Promise<IBloodRequestDocument | null> => {
   if (!mongoose.isValidObjectId(id)) return null;
-  return BloodRequest.findById(id).populate(
+
+  const doc = await BloodRequest.findById(id).populate(
     "requestedBy",
     "firstName lastName email role",
   );
+
+  if (!doc) return null;
+
+  // Lazy expiry: if still active but past expiresAt, transition now
+  const activeStatuses: RequestStatus[] = ["searching", "partiallyFulfilled"];
+  if (
+    activeStatuses.includes(doc.status) &&
+    doc.expiresAt &&
+    doc.expiresAt <= new Date()
+  ) {
+    doc.status = "expired";
+    await doc.save();
+  }
+
+  return doc;
 };
 
 // ─── Status transition ────────────────────────────────────────────────────────
@@ -99,6 +137,18 @@ export const updateBloodRequestStatus = async (
 
   const doc = await BloodRequest.findById(id);
   if (!doc) throw new Error("Blood request not found.");
+
+  // Lazy expiry check
+  const activeStatuses: RequestStatus[] = ["searching", "partiallyFulfilled"];
+  if (
+    activeStatuses.includes(doc.status) &&
+    doc.expiresAt &&
+    doc.expiresAt <= new Date()
+  ) {
+    doc.status = "expired";
+    await doc.save();
+    throw new Error("Blood request has expired.");
+  }
 
   // Ownership check — only creator or admin may change status
   const isOwner = doc.requestedBy.toString() === requestedBy;

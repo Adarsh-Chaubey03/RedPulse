@@ -78,6 +78,8 @@ export const discoverRequestsForDonor = async (
     status: { $in: ["searching", "partiallyFulfilled"] as RequestStatus[] },
     bloodGroup: { $in: recipientGroupsThisDonorCanHelp },
     "donorResponses.donorId": { $ne: new mongoose.Types.ObjectId(donorId) },
+    // Exclude requests that have already passed their expiry (worker may not have run yet)
+    expiresAt: { $gt: new Date() },
   };
 
   const skip = (page - 1) * limit;
@@ -144,11 +146,24 @@ export const respondToBloodRequest = async (
     throw Object.assign(new Error("Blood request not found."), { statusCode: 404 });
   }
 
-  // ── 4. Request must still be active ─────────────────────────────────────
+  // ── 4. Request must still be active AND not expired ─────────────────────
   const activeStatuses: RequestStatus[] = ["searching", "partiallyFulfilled"];
   if (!activeStatuses.includes(existing.status)) {
     throw Object.assign(
       new Error(`Cannot respond to a request with status '${existing.status}'.`),
+      { statusCode: 409 },
+    );
+  }
+
+  // Expiration check — guard against the case where the worker hasn't run yet
+  if (existing.expiresAt && existing.expiresAt <= new Date()) {
+    // Opportunistically expire the request so the state is consistent
+    await BloodRequest.findOneAndUpdate(
+      { _id: requestObjectId, status: { $in: activeStatuses } },
+      { $set: { status: "expired" } },
+    );
+    throw Object.assign(
+      new Error("This blood request has expired and is no longer accepting responses."),
       { statusCode: 409 },
     );
   }

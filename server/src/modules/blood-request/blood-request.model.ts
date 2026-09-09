@@ -103,6 +103,16 @@ const bloodRequestSchema = new Schema<IBloodRequestDocument>(
       type: Date,
       required: true,
     },
+    /**
+     * Hard expiration time — backend-enforced.
+     * Defaults to 48 hours after creation if not supplied.
+     * Urgency-based defaults applied in the service layer.
+     */
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: true,  // queried by the expiration worker
+    },
     urgency: {
       type: String,
       enum: ["critical", "urgent", "normal"],

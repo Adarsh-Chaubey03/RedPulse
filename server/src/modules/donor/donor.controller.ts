@@ -37,8 +37,15 @@ export const getNearbyDonors = async (
       return;
     }
 
+    // Optional urgency param — forwarded to service for escalation decisions.
+    // Sanitised: only accept known values; anything else is ignored.
+    const rawUrgency = typeof req.query.urgency === "string" ? req.query.urgency : undefined;
+    const urgency = rawUrgency && ["critical", "urgent", "normal"].includes(rawUrgency)
+      ? rawUrgency
+      : undefined;
+
     const startMs = Date.now();
-    const donors = await findNearbyDonors(parsed.data);
+    const donors = await findNearbyDonors(parsed.data, urgency);
     const queryMs = Date.now() - startMs;
 
     res.status(200).json({
