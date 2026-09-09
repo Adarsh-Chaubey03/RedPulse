@@ -7,6 +7,7 @@ import { userRoutes } from "./modules/user/user.routes";
 import { bloodRequestRoutes } from "./modules/blood-request/blood-request.routes";
 import { donorRoutes } from "./modules/donor/donor.routes";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes";
+import { adminRoutes } from "./modules/admin/admin.routes";
 
 const app = express();
 
@@ -47,6 +48,7 @@ userRoutes(router);
 bloodRequestRoutes(router);
 donorRoutes(router);
 inventoryRoutes(router);
+adminRoutes(router);
 app.use(router);
 
 export default app;
