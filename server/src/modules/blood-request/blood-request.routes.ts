@@ -14,21 +14,23 @@ import {
 } from "./donor-response.controller";
 
 export const bloodRequestRoutes = (router: Router): void => {
-  // ── Existing routes (unchanged) ──────────────────────────────────────────
+  // ── IMPORTANT: specific named routes MUST come before /:id routes ──────────
+  // Express matches routes in registration order. "discover" must be before /:id
+  // or the string "discover" will be treated as a request ID parameter.
+
+  /**
+   * GET /api/blood-requests/discover
+   * Donor-only: returns compatible, active requests not yet responded to.
+   * Registered FIRST so Express does not match "discover" as /:id.
+   */
+  router.get("/api/blood-requests/discover", authenticate, discoverRequests);
+
+  // ── CRUD routes ───────────────────────────────────────────────────────────
   router.post("/api/blood-requests",             authenticate, createRequest);
   router.get("/api/blood-requests",              authenticate, listRequests);
   router.get("/api/blood-requests/:id",          authenticate, getRequest);
   router.patch("/api/blood-requests/:id/status", authenticate, updateStatus);
   router.post("/api/blood-requests/:id/cancel",  authenticate, cancelRequest);
-
-  // ── Phase 2: donor discovery + response ──────────────────────────────────
-
-  /**
-   * GET /api/blood-requests/discover
-   * Donor-only: returns compatible, active requests not yet responded to.
-   * Must come BEFORE /:id routes so Express doesn't treat "discover" as an id.
-   */
-  router.get("/api/blood-requests/discover", authenticate, discoverRequests);
 
   /**
    * POST /api/blood-requests/:id/respond

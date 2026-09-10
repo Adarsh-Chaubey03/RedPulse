@@ -68,7 +68,10 @@ export default function BloodRequestsPage() {
     try {
       const params: Record<string, string | number> = { page, limit: 20 };
       if (statusFilter) params.status = statusFilter;
-      if (user.role !== 'admin') params.requestedBy = user._id;
+      // Donors and admins see all requests; patients and hospitals see only their own
+      if (user.role === 'patient' || user.role === 'hospital') {
+        params.requestedBy = user._id;
+      }
       const res = await listBloodRequests(params);
       setRequests(res.data.requests);
       setMeta(res.data.meta);

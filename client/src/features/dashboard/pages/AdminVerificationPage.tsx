@@ -37,14 +37,20 @@ export default function AdminVerificationPage() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch all non-admin users so we can show both pending and resolved
+      // Only fetch roles that require admin verification: donors, hospitals, blood banks
       const [pendingRes, verifiedRes] = await Promise.all([
-        getAdminUsers({ isVerified: false,  limit: 50 }),
-        getAdminUsers({ isVerified: true,   limit: 20 }),
+        getAdminUsers({ isVerified: false, limit: 50 }),
+        getAdminUsers({ isVerified: true,  limit: 20 }),
       ]);
 
-      const pending  = pendingRes.data.users.map(u => ({ user: u, localStatus: 'pending'  as const }));
-      const verified = verifiedRes.data.users.map(u => ({ user: u, localStatus: 'verified' as const }));
+      // Filter out admin and patient roles — they don't go through verification workflow
+      const verifiableRoles = ['donor', 'hospital', 'bloodBank'];
+      const pending  = pendingRes.data.users
+        .filter(u => verifiableRoles.includes(u.role))
+        .map(u => ({ user: u, localStatus: 'pending'  as const }));
+      const verified = verifiedRes.data.users
+        .filter(u => verifiableRoles.includes(u.role))
+        .map(u => ({ user: u, localStatus: 'verified' as const }));
       setItems([...pending, ...verified]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load verification data.');

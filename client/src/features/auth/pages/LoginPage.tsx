@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getCurrentUser, loginUser } from '../services/authApi';
@@ -44,9 +44,23 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
 
-  const login    = useAuthStore(s => s.login);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const login          = useAuthStore(s => s.login);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const authUser       = useAuthStore(s => s.user);
+  const navigate       = useNavigate();
+  const location       = useLocation();
+
+  // Redirect authenticated users away from the login page
+  useEffect(() => {
+    if (isAuthenticated && authUser) {
+      // Go to profile setup if incomplete, otherwise dashboard
+      if (!authUser.isProfileComplete) {
+        navigate('/profile/setup', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, authUser, navigate]);
 
   // If user was sent here after registering, show a note
   const justRegistered = (location.state as { registered?: boolean })?.registered;
