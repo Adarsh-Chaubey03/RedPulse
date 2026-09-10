@@ -358,6 +358,20 @@ export default function CreateBloodRequestPage() {
                   <span style={{ fontWeight: 600, color: '#111827' }}>{v}</span>
                 </div>
               ))}
+              {/* Auto-expiry preview */}
+              {(() => {
+                const hoursMap: Record<string, number> = { critical: 12, urgent: 24, normal: 48 };
+                const h = hoursMap[vals.urgency] ?? 48;
+                const expiry = new Date(Date.now() + h * 3600 * 1000);
+                return (
+                  <div style={{ display: 'flex', gap: 12, fontSize: 13, borderTop: `1px solid ${BORDER}`, paddingTop: 10, marginTop: 2 }}>
+                    <span style={{ width: 110, color: '#6b7280', flexShrink: 0 }}>Auto-expires</span>
+                    <span style={{ fontWeight: 600, color: vals.urgency === 'critical' ? RED : '#d97706' }}>
+                      {expiry.toLocaleString()} ({h}h from now)
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             {serverError && (
