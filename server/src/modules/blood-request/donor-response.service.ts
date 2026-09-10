@@ -51,22 +51,7 @@ export const discoverRequestsForDonor = async (
   // Verify donor and get their blood group
   const donor = await assertDonorEligible(donorId);
 
-  // Find active requests that: need a compatible blood group AND donor hasn't responded
-  const filter = {
-    status: { $in: ["searching", "partiallyFulfilled"] as RequestStatus[] },
-    bloodGroup: {
-      $in: (await import("../../shared/blood-compatibility"))
-        .getCompatibleDonorGroups(donor.bloodGroup as BloodGroup)
-        // find requests where this donor's blood group is compatible as DONOR
-        // i.e. requests whose bloodGroup the donor can donate to
-        // We need requests where donor.bloodGroup is in COMPATIBLE_DONORS[request.bloodGroup]
-        // Simpler: pass all groups that this donor can donate to
-        .map(() => donor.bloodGroup), // placeholder — see below
-    },
-    "donorResponses.donorId": { $ne: new mongoose.Types.ObjectId(donorId) },
-  };
-
-  // Correct approach: find all recipient groups for which this donor's bloodGroup is compatible
+  // Find all recipient blood groups this donor is compatible with
   const { COMPATIBLE_DONORS } = await import("../../shared/blood-compatibility");
   const recipientGroupsThisDonorCanHelp = (
     Object.entries(COMPATIBLE_DONORS) as [BloodGroup, readonly BloodGroup[]][]
@@ -74,7 +59,7 @@ export const discoverRequestsForDonor = async (
     .filter(([, donors]) => (donors as readonly string[]).includes(donor.bloodGroup))
     .map(([recipient]) => recipient);
 
-  const correctFilter = {
+  const filter = {
     status: { $in: ["searching", "partiallyFulfilled"] as RequestStatus[] },
     bloodGroup: { $in: recipientGroupsThisDonorCanHelp },
     "donorResponses.donorId": { $ne: new mongoose.Types.ObjectId(donorId) },
@@ -84,13 +69,13 @@ export const discoverRequestsForDonor = async (
 
   const skip = (page - 1) * limit;
   const [requests, total] = await Promise.all([
-    BloodRequest.find(correctFilter)
+    BloodRequest.find(filter)
       .sort({ urgency: 1, requiredAt: 1 })  // critical first, then soonest
       .skip(skip)
       .limit(limit)
       .populate("requestedBy", "firstName lastName email role")
       .lean(),
-    BloodRequest.countDocuments(correctFilter),
+    BloodRequest.countDocuments(filter),
   ]);
 
   return { requests: requests as unknown as IBloodRequestDocument[], meta: { page, limit, total } };

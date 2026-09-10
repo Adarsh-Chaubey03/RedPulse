@@ -115,8 +115,17 @@ export const updateStatusSchema = z.object({
 export const listQuerySchema = z.object({
   page:        z.coerce.number().int().min(1).optional().default(1),
   limit:       z.coerce.number().int().min(1).max(100).optional().default(20),
-  status:      z.string().optional(),
-  bloodGroup:  z.string().optional(),
-  urgency:     z.string().optional(),
+  status:      z.string().refine(
+    v => STATUS_VALUES.includes(v as typeof STATUS_VALUES[number]),
+    { message: `status must be one of: ${STATUS_VALUES.join(", ")}.` }
+  ).optional(),
+  bloodGroup:  z.string().refine(
+    v => BLOOD_GROUPS.includes(v as typeof BLOOD_GROUPS[number]),
+    { message: `bloodGroup must be one of: ${BLOOD_GROUPS.join(", ")}.` }
+  ).optional(),
+  urgency:     z.string().refine(
+    v => URGENCY_VALUES.includes(v as typeof URGENCY_VALUES[number]),
+    { message: `urgency must be one of: ${URGENCY_VALUES.join(", ")}.` }
+  ).optional(),
   requestedBy: z.string().optional(),
 });
