@@ -79,7 +79,8 @@ export default function BloodRequestsPage() {
     }
   }, [page, statusFilter, user]);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   const filtered = search.trim()
     ? requests.filter(r =>

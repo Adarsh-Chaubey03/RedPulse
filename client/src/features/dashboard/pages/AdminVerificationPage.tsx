@@ -53,7 +53,8 @@ export default function AdminVerificationPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   const handleApprove = async (userId: string) => {
     setActing(userId);

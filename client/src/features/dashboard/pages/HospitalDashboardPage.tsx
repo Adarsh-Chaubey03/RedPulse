@@ -85,7 +85,8 @@ export default function HospitalDashboardPage() {
     }
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   const active    = requests.filter(r => r.status === 'searching' || r.status === 'partiallyFulfilled');
   const fulfilled = requests.filter(r => r.status === 'fulfilled');

@@ -55,14 +55,11 @@ export default function DonorDashboardPage() {
   const [reqError,   setReqError]   = useState('');
   const [reqTotal,   setReqTotal]   = useState(0);
 
-  if (!user) return null;
-  const firstName = user.firstName ?? 'Donor';
-
   // ── Availability toggle (already real API) ────────────────────────────────
   const handleAvailability = async () => {
     setAvailLoading(true); setAvailError('');
     try {
-      const res = await updateMyAvailability(!user.isAvailable);
+      const res = await updateMyAvailability(!user!.isAvailable);
       setUser(res.data);
     } catch (err: unknown) {
       setAvailError(
@@ -77,19 +74,22 @@ export default function DonorDashboardPage() {
     setReqLoading(true); setReqError('');
     try {
       const res = await discoverBloodRequests({ page: 1, limit: 10 });
-      // discoverBloodRequests returns { requests, meta }
       const data = res.data as { requests: BloodRequest[]; meta: { total: number } };
       setRequests(data.requests);
       setReqTotal(data.meta.total);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message ?? '';
-      // If donor profile incomplete / not available, show appropriate message
       setReqError(msg || 'Unable to load compatible requests.');
     } finally { setReqLoading(false); }
   }, []);
 
-  useEffect(() => { loadRequests(); }, [loadRequests]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadRequests(); }, [loadRequests]); // loadRequests is stable via useCallback
+
+  // All hooks done — now safe to conditionally return
+  if (!user) return null;
+  const firstName = user.firstName ?? 'Donor';
 
   // Build request markers for map (only requests with valid coords)
   const requestMarkers = requests

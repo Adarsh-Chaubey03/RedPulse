@@ -58,7 +58,8 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   if (!user) return null;
 

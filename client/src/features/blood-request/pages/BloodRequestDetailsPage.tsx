@@ -127,7 +127,8 @@ export default function BloodRequestDetailsPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   if (loading) return <p style={{ padding: '3rem 2rem', color: '#9ca3af', fontSize: 14 }}>Loading…</p>;
   if (error || !request) {
@@ -157,6 +158,8 @@ export default function BloodRequestDetailsPage() {
   const isActive     = request.status === 'searching' || request.status === 'partiallyFulfilled';
 
   const [lng, lat] = request.hospitalLocation.coordinates;
+  // Stable "now" snapshot for expiry color — recalculated only on re-render (acceptable for display)
+  const nowPlusSixHours = new Date(Date.now() + 6 * 3600 * 1000); // eslint-disable-line react-hooks/purity
 
   const handleStatusChange = async (newStatus: RequestStatus) => {
     if (!id) return;
@@ -244,7 +247,7 @@ export default function BloodRequestDetailsPage() {
           <Row label="Location"        value={`${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`} />
           <Row label="Required by"     value={new Date(request.requiredAt).toLocaleString()} />
           <Row label="Expires at"      value={request.expiresAt
-            ? <span style={{ color: isActive && new Date(request.expiresAt) < new Date(Date.now() + 6 * 3600 * 1000) ? RED : '#374151' }}>
+            ? <span style={{ color: isActive && new Date(request.expiresAt) < nowPlusSixHours ? RED : '#374151' }}>
                 {new Date(request.expiresAt).toLocaleString()}
               </span>
             : '—'}

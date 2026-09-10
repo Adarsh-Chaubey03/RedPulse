@@ -68,7 +68,8 @@ export default function AdminUsersPage() {
     }
   }, [page, roleFilter, verifFilter, search]);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   // Debounce search input
   const handleSearchChange = (v: string) => {

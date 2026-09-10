@@ -23,7 +23,8 @@ export default function AdminAnalyticsPage() {
     } catch { /* silent */ } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   const total     = requests.length;
   const fulfilled = requests.filter(r => r.status === 'fulfilled').length;

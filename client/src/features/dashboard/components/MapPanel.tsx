@@ -300,6 +300,7 @@ export default function MapPanel(props: MapPanelProps) {
 
 // ─── Helper: convert NearbyDonor → DonorMarker ───────────────────────────────
 // Keeps map-related conversions co-located with the map component.
+// eslint-disable-next-line react-refresh/only-export-components
 export function nearbyDonorToMarker(donor: {
   _id: string;
   firstName?: string;
@@ -323,6 +324,7 @@ export function nearbyDonorToMarker(donor: {
 }
 
 // ─── Helper: convert BloodRequest → RequestMarker ────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components
 export function bloodRequestToMarker(req: {
   _id: string;
   bloodGroup: string;

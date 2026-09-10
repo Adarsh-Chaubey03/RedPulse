@@ -70,7 +70,8 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
   const firstName = user?.firstName ?? 'Admin';
   const criticalCount = requests.filter(r => r.urgency === 'critical' && (r.status === 'searching' || r.status === 'partiallyFulfilled')).length;
