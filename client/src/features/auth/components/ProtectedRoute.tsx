@@ -14,7 +14,13 @@ export default function ProtectedRoute({
   children,
   requiresIncompleteProfile = false,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isInitialized, user } = useAuthStore();
+  // Subscribe per-field. This component wraps the whole authenticated tree, and
+  // a whole-store subscription re-rendered all of it every time accessToken
+  // rotated (each session restore and each 401 retry) despite nothing here
+  // depending on the token.
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const isInitialized   = useAuthStore(s => s.isInitialized);
+  const user            = useAuthStore(s => s.user);
 
   // Show a minimal loading state while the startup session restore is in progress
   if (!isInitialized) {

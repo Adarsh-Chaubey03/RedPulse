@@ -120,17 +120,19 @@ export const updateUserLocation = async (
   latitude: number,
   longitude: number,
 ): Promise<IUserDocument | null> => {
-  const user = await User.findById(userId);
-  if (!user) return null;
-
   const location: GeoPoint = {
     type: "Point",
     coordinates: [longitude, latitude], // GeoJSON: [lng, lat]
   };
 
-  user.location = location;
-  await user.save();
-  return user;
+  // Single atomic write instead of findById + save. Nothing here depends on the
+  // pre-update document, and runValidators keeps the GeoPoint sub-schema checks.
+  // Returns null for an unknown user, exactly as the read-then-save did.
+  return User.findByIdAndUpdate(
+    userId,
+    { $set: { location } },
+    { new: true, runValidators: true },
+  );
 };
 
 // ─── Legacy helpers (used by auth module) ────────────────────────────────────
