@@ -195,7 +195,8 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await User.findById(userId);
+    // Read-only path: only used for token signing + sanitised output.
+    const user = await User.findById(userId).lean();
 
     if (!user) {
       clearRefreshCookie(res);
@@ -269,7 +270,8 @@ export const me = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await User.findById(userId);
+    // Read-only path: no .save() happens here, so skip Mongoose hydration.
+    const user = await User.findById(userId).lean();
 
     if (!user) {
       res.status(404).json({

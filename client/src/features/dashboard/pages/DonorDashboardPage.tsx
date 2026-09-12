@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../auth/store/authStore';
 import { updateMyAvailability } from '../../profile/services/profileApi';
 import { discoverBloodRequests } from '../../blood-request/services/donorApi';
 import { StatCard, SectionCard, CardHeader, RED, BORDER } from '../components/ui';
 import MapPanel, { bloodRequestToMarker } from '../components/MapPanel';
+import type { RequestMarker } from '../components/MapPanel';
 import type { BloodRequest, RequestStatus, Urgency } from '../../blood-request/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,7 +44,11 @@ const formatDateTime = (iso: string) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DonorDashboardPage() {
-  const { user, setUser } = useAuthStore();
+  // Select individual slices rather than the whole store: the auth store's
+  // accessToken rotates on every refresh, and a whole-store subscription would
+  // re-render this page (and remount every map marker) each time it did.
+  const user    = useAuthStore(s => s.user);
+  const setUser = useAuthStore(s => s.setUser);
   const navigate = useNavigate();
 
   const [availLoading, setAvailLoading] = useState(false);
@@ -87,21 +92,45 @@ export default function DonorDashboardPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadRequests(); }, [loadRequests]); // loadRequests is stable via useCallback
 
+  // ── Map inputs ────────────────────────────────────────────────────────────
+  // These feed <MapPanel>. Recomputing them inline on every render handed the
+  // map a new array + new position objects each time, which made it re-apply
+  // every AdvancedMarker. Same values, stable identities.
+  const userLocation = user?.location;
+
+  // Build request markers for map (only requests with valid coords)
+  const requestMarkers = useMemo(
+    () => requests
+      .filter(r => r.hospitalLocation?.coordinates?.length === 2)
+      .map(bloodRequestToMarker),
+    [requests],
+  );
+
+  // Center map on user's stored location or first request location
+  const mapCenter = useMemo(
+    () => userLocation
+      ? { lat: userLocation.coordinates[1], lng: userLocation.coordinates[0] }
+      : requestMarkers[0]
+      ? { lat: requestMarkers[0].lat, lng: requestMarkers[0].lng }
+      : { lat: 20, lng: 0 },
+    [userLocation, requestMarkers],
+  );
+
+  const centerPoint = useMemo(
+    () => userLocation
+      ? { lat: userLocation.coordinates[1], lng: userLocation.coordinates[0], label: 'Your location' }
+      : undefined,
+    [userLocation],
+  );
+
+  const handleRequestClick = useCallback(
+    (req: RequestMarker) => navigate(`/blood-requests/${req.id}`),
+    [navigate],
+  );
+
   // All hooks done — now safe to conditionally return
   if (!user) return null;
   const firstName = user.firstName ?? 'Donor';
-
-  // Build request markers for map (only requests with valid coords)
-  const requestMarkers = requests
-    .filter(r => r.hospitalLocation?.coordinates?.length === 2)
-    .map(bloodRequestToMarker);
-
-  // Center map on user's stored location or first request location
-  const mapCenter = user.location
-    ? { lat: user.location.coordinates[1], lng: user.location.coordinates[0] }
-    : requestMarkers[0]
-    ? { lat: requestMarkers[0].lat, lng: requestMarkers[0].lng }
-    : { lat: 20, lng: 0 };
 
   return (
     <div style={{ maxWidth: 960 }}>
@@ -279,11 +308,9 @@ export default function DonorDashboardPage() {
               height={260}
               center={mapCenter}
               zoom={user.location ? 11 : 2}
-              centerPoint={user.location
-                ? { lat: user.location.coordinates[1], lng: user.location.coordinates[0], label: 'Your location' }
-                : undefined}
+              centerPoint={centerPoint}
               requestMarkers={requestMarkers}
-              onRequestClick={req => navigate(`/blood-requests/${req.id}`)}
+              onRequestClick={handleRequestClick}
             />
             <div style={{ padding: '12px 20px' }}>
               <button onClick={() => navigate('/blood-requests')} style={{
