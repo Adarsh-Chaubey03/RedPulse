@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader, SectionCard, RED, BORDER } from '../components/ui';
 import { BLOOD_GROUPS } from '../../blood-request/types';
 import { getNearbyDonors } from '../../blood-request/services/donorApi';
@@ -80,6 +80,23 @@ export default function FindDonorsPage() {
       setLoading(false);
     }
   };
+
+  // ── Map inputs ────────────────────────────────────────────────────────────
+  // Built once per change instead of per render, so <MapPanel> isn't handed a
+  // fresh marker array and fresh position objects on every keystroke.
+  const mapCenter = useMemo(() => {
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    // Keeps the original truthiness test as-is (0 or NaN → undefined).
+    return latNum && lngNum ? { lat: latNum, lng: lngNum } : undefined;
+  }, [lat, lng]);
+
+  const centerPoint = useMemo(
+    () => (mapCenter ? { ...mapCenter, label: 'Search center' } : undefined),
+    [mapCenter],
+  );
+
+  const donorMarkers = useMemo(() => donors.map(nearbyDonorToMarker), [donors]);
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -253,10 +270,10 @@ export default function FindDonorsPage() {
             <div>
               <MapPanel
                 height={420}
-                center={parseFloat(lat) && parseFloat(lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : undefined}
+                center={mapCenter}
                 zoom={13}
-                centerPoint={parseFloat(lat) && parseFloat(lng) ? { lat: parseFloat(lat), lng: parseFloat(lng), label: 'Search center' } : undefined}
-                donorMarkers={donors.map(nearbyDonorToMarker)}
+                centerPoint={centerPoint}
+                donorMarkers={donorMarkers}
                 onDonorClick={setSelectedDonor}
               />
               {/* Selected donor detail */}

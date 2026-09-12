@@ -71,6 +71,12 @@ export default function AdminUsersPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]); // load is stable via useCallback
 
+  // Cancel a still-pending debounce on unmount so the timer can't fire a
+  // setState against an unmounted component.
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
+
   // Debounce search input
   const handleSearchChange = (v: string) => {
     setSearchInput(v);
