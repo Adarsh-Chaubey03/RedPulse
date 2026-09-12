@@ -167,16 +167,21 @@ export const findNearbyDonors = async (
  * Used by the response workflow before accepting a donor response.
  *
  * Returns the donor document (without password) if eligible, or throws.
+ *
+ * firstName/lastName are included in the projection so callers that need the
+ * donor's display name do not have to issue a second read for the same user.
  */
 export const assertDonorEligible = async (donorId: string): Promise<{
   _id: string;
+  firstName?: string;
+  lastName?: string;
   bloodGroup: BloodGroup;
   isAvailable: boolean;
   isVerified: boolean;
 }> => {
-  const donor = await User.findById(donorId).select(
-    "role bloodGroup isAvailable isVerified location",
-  );
+  const donor = await User.findById(donorId)
+    .select("role firstName lastName bloodGroup isAvailable isVerified location")
+    .lean();
 
   if (!donor) {
     throw new Error("Donor not found.");
@@ -193,6 +198,8 @@ export const assertDonorEligible = async (donorId: string): Promise<{
 
   return {
     _id: donor._id.toString(),
+    firstName: donor.firstName,
+    lastName: donor.lastName,
     bloodGroup: donor.bloodGroup as BloodGroup,
     isAvailable: donor.isAvailable,
     isVerified: donor.isVerified,

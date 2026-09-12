@@ -20,7 +20,7 @@
 import mongoose from "mongoose";
 import BloodRequest from "./blood-request.model";
 import { assertDonorEligible } from "../donor/donor.service";
-import { isDonorCompatible } from "../../shared/blood-compatibility";
+import { COMPATIBLE_DONORS, isDonorCompatible } from "../../shared/blood-compatibility";
 import type { BloodGroup, IBloodRequestDocument, RequestStatus } from "./blood-request.types";
 
 // ─── Public result shape ──────────────────────────────────────────────────────
@@ -52,7 +52,6 @@ export const discoverRequestsForDonor = async (
   const donor = await assertDonorEligible(donorId);
 
   // Find all recipient blood groups this donor is compatible with
-  const { COMPATIBLE_DONORS } = await import("../../shared/blood-compatibility");
   const recipientGroupsThisDonorCanHelp = (
     Object.entries(COMPATIBLE_DONORS) as [BloodGroup, readonly BloodGroup[]][]
   )
@@ -170,15 +169,11 @@ export const respondToBloodRequest = async (
     ? "fulfilled"
     : "partiallyFulfilled";
 
-  // Donor display name (best-effort — may be undefined if profile incomplete)
-  const donorUser = await (await import("../user/user.model")).default
-    .findById(donorId)
-    .select("firstName lastName bloodGroup")
-    .lean();
-
-  const donorName = donorUser
-    ? `${donorUser.firstName ?? ""} ${donorUser.lastName ?? ""}`.trim() || "Unknown Donor"
-    : "Unknown Donor";
+  // Donor display name (best-effort — may be undefined if profile incomplete).
+  // Reuses the record already loaded by assertDonorEligible above rather than
+  // re-reading the same user document.
+  const donorName =
+    `${donor.firstName ?? ""} ${donor.lastName ?? ""}`.trim() || "Unknown Donor";
 
   // ── 7. Atomic update ─────────────────────────────────────────────────────
   // Filter ensures:

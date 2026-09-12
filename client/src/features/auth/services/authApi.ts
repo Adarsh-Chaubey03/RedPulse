@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
+import type { AuthUser } from '../store/authStore';
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
@@ -79,7 +80,9 @@ api.interceptors.response.use(
     originalRequest._retried = true;
 
     try {
-      const newToken = await refreshToken();
+      // Only the token is used here — the 401 retry path deliberately leaves the
+      // cached user record untouched, exactly as before.
+      const { accessToken: newToken } = await refreshToken();
       useAuthStore.getState().setAccessToken(newToken);
 
       drainQueue(newToken);
@@ -124,11 +127,12 @@ export const getCurrentUser = async () => {
 
 /**
  * Hit /api/auth/refresh — browser sends the httpOnly cookie automatically.
- * Returns the new access token string.
+ * Returns the new access token *and* the user record the endpoint already
+ * includes in its response, so a session restore needs only this one call.
  */
-export const refreshToken = async (): Promise<string> => {
+export const refreshToken = async (): Promise<{ accessToken: string; user: AuthUser }> => {
   const response = await api.post('/api/auth/refresh');
-  return response.data.data.accessToken as string;
+  return response.data.data as { accessToken: string; user: AuthUser };
 };
 
 export const logoutUser = async () => {

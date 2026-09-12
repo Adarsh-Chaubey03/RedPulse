@@ -60,7 +60,7 @@ const bloodRequestSchema = new Schema<IBloodRequestDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
+      // Indexed via the { requestedBy, urgency, createdAt } compound below.
     },
     patientName: {
       type: String,
@@ -111,7 +111,8 @@ const bloodRequestSchema = new Schema<IBloodRequestDocument>(
     expiresAt: {
       type: Date,
       required: true,
-      index: true,  // queried by the expiration worker
+      // Indexed via the { status, expiresAt } compound below — the expiration
+      // worker and the discover query both filter on status as well.
     },
     urgency: {
       type: String,
@@ -129,7 +130,7 @@ const bloodRequestSchema = new Schema<IBloodRequestDocument>(
       enum: ["searching", "partiallyFulfilled", "fulfilled", "expired", "cancelled"],
       required: true,
       default: "searching",
-      index: true,
+      // Indexed via the { status, ... } compounds below.
     },
     // Embedded array of donor responses
     donorResponses: {
@@ -144,16 +145,32 @@ const bloodRequestSchema = new Schema<IBloodRequestDocument>(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
+//
+// Each compound index below is justified by a real query in the service layer;
+// single-field indexes that are a strict prefix of one of them were removed so
+// writes don't pay for duplicate b-trees.
 
 // 2dsphere index for geospatial queries on hospital location
 bloodRequestSchema.index({ hospitalLocation: "2dsphere" });
 
-// Compound sparse unique index: one response per donor per request.
-// Using sparse so documents without responses are not indexed.
-bloodRequestSchema.index(
-  { _id: 1, "donorResponses.donorId": 1 },
-  { unique: false }, // uniqueness enforced in service with $elemMatch check
-);
+// expiration.worker.ts runs every 60s:
+//   { status: { $in: ACTIVE }, expiresAt: { $lte: now } }
+// Also serves the expiry guard in discoverRequestsForDonor ({ status, expiresAt }).
+// Replaces the former standalone `expiresAt` index — expiresAt is never queried
+// without status.
+bloodRequestSchema.index({ status: 1, expiresAt: 1 });
+
+// blood-request.service.listBloodRequests:
+//   filter { status } + sort { urgency: 1, createdAt: -1 }
+// Serves filter and sort from the index instead of an in-memory SORT stage.
+// The { status: 1 } prefix also covers status-only filters and the
+// "$group by status" platform-stats aggregation.
+bloodRequestSchema.index({ status: 1, urgency: 1, createdAt: -1 });
+
+// listBloodRequests when scoped to one requester ("my requests"):
+//   filter { requestedBy } + sort { urgency: 1, createdAt: -1 }
+// The { requestedBy: 1 } prefix replaces the former standalone index.
+bloodRequestSchema.index({ requestedBy: 1, urgency: 1, createdAt: -1 });
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 const BloodRequest =

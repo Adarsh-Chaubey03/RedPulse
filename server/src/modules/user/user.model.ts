@@ -25,10 +25,9 @@ const userSchema = new Schema<IUserDocument>(
     email: {
       type: String,
       required: true,
-      unique: true,
+      unique: true, // already creates the index — no separate `index: true`
       lowercase: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -95,8 +94,19 @@ const userSchema = new Schema<IUserDocument>(
   },
 );
 
+// ─── Indexes ──────────────────────────────────────────────────────────────────
+
 // 2dsphere index required for $near / $geoWithin queries on donors
 userSchema.index({ location: "2dsphere" });
+
+// admin.service.listUsers: filter { role } + sort { createdAt: -1 }.
+// The { role: 1 } prefix also serves the "$group by role" platform-stats
+// aggregation, which previously had to scan the whole collection.
+userSchema.index({ role: 1, createdAt: -1 });
+
+// admin.service.getPendingVerificationUsers / the pendingVerification count:
+//   filter { isVerified: false, role: { $ne: "admin" } } + sort { createdAt: -1 }
+userSchema.index({ isVerified: 1, createdAt: -1 });
 
 userSchema.set("toJSON", {
   transform: (_doc, ret) => {
