@@ -8,7 +8,8 @@ const inventorySchema = new Schema<IInventoryEntryDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
+      // Indexed via the { bloodBankId, bloodGroup } compound below, whose
+      // prefix already serves bloodBankId-only lookups.
     },
     bloodGroup: {
       type: String,

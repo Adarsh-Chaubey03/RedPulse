@@ -13,27 +13,48 @@ export const getInventory = async (
   }
 
   const startMs = Date.now();
-  const entries = await Inventory.find({
-    bloodBankId: new mongoose.Types.ObjectId(bloodBankId),
-  }).sort({ bloodGroup: 1 });
+  const bankObjectId = new mongoose.Types.ObjectId(bloodBankId);
 
-  // Ensure all 8 blood groups are returned (even if units = 0)
-  const entryMap = new Map(entries.map((e) => [e.bloodGroup, e]));
-  const result: IInventoryEntryDocument[] = [];
+  let entries = await Inventory.find({ bloodBankId: bankObjectId }).sort({
+    bloodGroup: 1,
+  });
 
-  for (const bg of ALL_BLOOD_GROUPS) {
-    if (entryMap.has(bg)) {
-      result.push(entryMap.get(bg)!);
-    } else {
-      // Auto-create missing entry with 0 units
-      const created = await Inventory.create({
-        bloodBankId: new mongoose.Types.ObjectId(bloodBankId),
-        bloodGroup: bg,
-        units: 0,
-      });
-      result.push(created);
-    }
+  // Ensure all 8 blood groups are returned (even if units = 0).
+  // This previously issued one sequential Inventory.create() per missing group —
+  // up to 8 extra serial round-trips on a blood bank's first load. A single
+  // bulkWrite of upserts replaces them; using upsert + $setOnInsert rather than
+  // insert also makes two concurrent first loads safe instead of racing into a
+  // duplicate-key error.
+  const present = new Set(entries.map((e) => e.bloodGroup));
+  const missing = ALL_BLOOD_GROUPS.filter((bg) => !present.has(bg));
+
+  if (missing.length > 0) {
+    await Inventory.bulkWrite(
+      missing.map((bg) => ({
+        updateOne: {
+          filter: { bloodBankId: bankObjectId, bloodGroup: bg },
+          update: {
+            $setOnInsert: {
+              bloodBankId: bankObjectId,
+              bloodGroup: bg,
+              units: 0,
+            },
+          },
+          upsert: true,
+        },
+      })),
+    );
+
+    entries = await Inventory.find({ bloodBankId: bankObjectId }).sort({
+      bloodGroup: 1,
+    });
   }
+
+  // Emit in ALL_BLOOD_GROUPS order — same ordering the previous loop produced.
+  const entryMap = new Map(entries.map((e) => [e.bloodGroup, e]));
+  const result = ALL_BLOOD_GROUPS.map((bg) => entryMap.get(bg)).filter(
+    (e): e is IInventoryEntryDocument => e !== undefined,
+  );
 
   const queryMs = Date.now() - startMs;
   // Attach queryMs for controller reporting (non-standard but useful)
